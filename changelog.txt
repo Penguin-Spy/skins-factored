@@ -18,5 +18,9 @@ Date: 25. 10. 2021
     - Localization
     - Swapping character when setting changed
     - Choose right character on respawn
-  To-Do:
-    - /join game
+
+---------------------------------------------------------------------------------------------------
+Version: 0.0.4
+Date: 7. 3. 2022
+  Indev:
+    - Better compatability with Space Exploration

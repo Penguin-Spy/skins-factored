@@ -126,6 +126,11 @@ function swap_character(old_character, new_prototype_name)
   end
   player.hand_location = hand_location
 
+  -- Tell space exploration that we swapped characters
+  if script.active_mods["space-exploration"] then
+    remote.call("space-exploration", "on_character_swapped", { old_character = old_character, new_character = new_character})
+  end
+
   --[[ Destroy old character ]]
   old_character.destroy()
 
