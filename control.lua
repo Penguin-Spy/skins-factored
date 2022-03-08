@@ -127,7 +127,6 @@ script.on_load(function()
   -- Space Exploration overrides players dying with its own respawn system
   if script.active_mods["space-exploration"] then
     local se_respawn_event = remote.call("space-exploration", "get_on_player_respawned_event")
-    log("se_respawn_event: " .. se_respawn_event)
     script.on_event(se_respawn_event, on_player_respawned)
   else
     script.on_event(defines.events.on_player_respawned, on_player_respawned)
@@ -136,18 +135,9 @@ end)
 
 -- on join world (for the 1st time)
 script.on_event(defines.events.on_player_joined_game, function(event)
-  log("on_player_joined_game")
   local player = game.get_player(event.player_index)
   local skin = settings.get_player_settings(player)["skins-factored-selected-skin"].value
   log("Player " .. player.name .. " joined, setting skin to " .. skin)
 
   try_swap(player, skin)
 end)
-
--- on player created (idk what this event is)
---[[script.on_event(defines.events.on_player_created, function(event)
-  log("on_player_created")
-  log(serpent.block(event))
-  log(game.get_player(event.player_index).name)
-end) ]]
-
