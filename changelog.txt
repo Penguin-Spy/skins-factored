@@ -32,3 +32,15 @@ Date: 7. 3. 2022
     - Initial release!
     - Properly merge character's animation tier armor lists
     - Generate corpse animation map from character's armor list
+
+---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 16. 3. 2022
+  Features:
+    - Notify the user if they try to swap to the skin they're currently using, instead of re-swapping to the same one again.
+    - Reset skin setting if swapping characters fails.
+    - Better validation before swapping characters, preventing some possible crashes.
+    - Correctly set player's facing direction when swapping to include diagonal directions.
+  Fixes:
+    - Slightly better compatability with other skin changing mods. It is now possible to swap between other mods' characters by first selecting the engineer.
+    - Only attempt to change a player's skin when they change the skin setting, instead of when any mods' settings change (whoops lol).

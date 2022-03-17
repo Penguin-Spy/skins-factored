@@ -7,7 +7,7 @@ This mod takes a different approach than other skin-changer mods: instead of try
 This library was written to be compatible with almost all mods that edit the default character prototype. It is explicitly compatible with Jetpacks & Space Exploration.
 
 # Usage
-This information is only for developers wanting to use this library! (add a link to where players should find mods that use this mod)
+This information is only for developers wanting to use this library! See the [mod portal](https://mods.factorio.com/mod/skins-factored) for information for players.
 
 Adding support for this mod is simple, and can be done without losing support for other character-selecting mods.  
 
@@ -16,6 +16,7 @@ First, add the following line to your `settings.lua`:
 ```lua
 table.insert(skins_factored.registered_skin_ids, "your-skin-id-here")
 ```
+Skin IDs must be a [valid prototype name](https://wiki.factorio.com/PrototypeBase#name "PrototypeBase - Factorio Wiki"). This is what players will see when using the `/character` command. Localization files are used for all other skin changing interfaces.
 
 ### `data.lua`
 Then, add the following lines to your `data.lua`:
@@ -82,10 +83,10 @@ skins-factored-selected-skin-SKIN_ID=Description for the skins setting dropdown 
 Finally, add the following to your mod's `info.json`:
 ```json
   "dependencies": [
-    "skins-factored >= 0.1.0"
+    "skins-factored >= 0.1.1"
   ],
 ```
-If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `.  
+If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. This library is *technically* compatable with other character selector mods, but it's very jank; players have to choose the default character (usually the engineer) before changing to a !skins character.  
 If you are creating a new skin mod and are using this library, *please* use a hard dependency, and **do not** try to overwrite the default `character` if this mod isn't found, that will simply create the plentiful bundle of issues that this library was written to avoid.
 
 # Legal stuff

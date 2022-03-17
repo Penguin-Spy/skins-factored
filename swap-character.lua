@@ -21,20 +21,30 @@ end
 -- https://lua-api.factorio.com/latest/LuaControl.html
 function swap_character(old_character, new_prototype_name)
   local player = old_character.player
-  log("Turning " .. player.name .. "'s " .. old_character.name .. " into " .. new_prototype_name)
 
-  if not game.entity_prototypes[new_prototype_name] then
-    log("  FAILED! invalid prototype!")
+  if not player then
+    log("Character swap failed; old_character must have a player attached to it")
     return false
   end
+  if not old_character.valid then
+    log("Character swap failed; old_character is invalid")
+    return false
+  end
+  if not game.entity_prototypes[new_prototype_name] then
+    log("Character swap failed; new_prototype_name is not a valid prototype")
+    return false
+  end
+
+  log("Turning " .. player.name .. "'s " .. old_character.name .. " into " .. new_prototype_name)
 
   --[[ Create new character ]]
   local new_character = old_character.surface.create_entity{
     name = new_prototype_name,
     position = old_character.position,
-    force = old_character.force,
-    direction = old_character.direction
+    force = old_character.force
   }
+  -- set direction outside of create_entity because that function doesn't appear to support 8-directional entities (it forces it to the 4 cardinals)
+  new_character.direction = old_character.direction
 
   -- [[ Properties ]]
   new_character.health = old_character.health
