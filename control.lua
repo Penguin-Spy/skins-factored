@@ -1,11 +1,11 @@
 --[[ control.lua © Penguin_Spy 2022
   Handles requests to swap which skin a player is using
 ]]
-require('util')
-require('swap-character')
+local util = require('util')
+local swap_character = require('swap-character')
 
 --[[
-  all three are tables indexed by player_index
+  all are tables indexed by player_index
   global.changed_setting = temporary indicator for the on_runtime_mod_setting_changed handler that code changed the setting, not a player
   global.orphaned_bots   = temporary storage for bots that need to be attached to a player's personal logistics network once it becomes available
   global.active_skin     = permanent list of what this player's current skin is. may be not present for a player if they haven't changed skins yet
@@ -13,7 +13,12 @@ require('swap-character')
 --]]
 
 
-function is_skin_available(skin, available_skins)
+-- The end user sees "engineer", but internally it is called just "character", not "character-engineer"
+local function skin_to_prototype(skin)
+  return (skin == "engineer" and "character") or ("character-" .. skin)
+end
+
+local function is_skin_available(skin, available_skins)
   for _, available_skin in ipairs(available_skins) do
     if skin == available_skin then
       return available_skin
@@ -22,7 +27,7 @@ function is_skin_available(skin, available_skins)
 end
 
 -- Safety checks used in multiple places
-function try_swap(player, skin)
+local function try_swap(player, skin)
   local available_skins = util.split(settings.global["skins-factored-all-skins"].value, ";")
   local character = player.character or player.cutscene_character
 
@@ -47,8 +52,7 @@ function try_swap(player, skin)
   end
 
   --[[ Safe to swap ]]
-  -- The end user sees "engineer", but internally it is called just "character", not "character-engineer"
-  local new_prototype_name = (skin == "engineer" and "character") or ("character-" .. skin)
+  local new_prototype_name = skin_to_prototype(skin)
 
   -- Finally attempt to swap, only updating the setting if it was successful.
   if swap_character(character, new_prototype_name, player) then
@@ -140,7 +144,6 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
     else
       -- Skin swap failed, we need to reset the player's setting to their current skin (or the default skin)
       local previous_skin = global.active_skin[event.player_index] or settings.player["skins-factored-selected-skin"].value
-      log(previous_skin)
 
       global.changed_setting[event.player_index] = true
       settings.get_player_settings(event.player_index)["skins-factored-selected-skin"] = {value = previous_skin}
@@ -155,7 +158,7 @@ end)
 --[[ Swapping to chosen character again (these should not display any confirmation message) ]]
 
 -- on respawn
-function on_player_respawned(event)
+local function on_player_respawned(event)
   local player = game.get_player(event.player_index)
   local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
   log("Player " .. player.name .. " respawned, setting skin to " .. skin)
@@ -163,52 +166,59 @@ function on_player_respawned(event)
   try_swap(player, skin)
 end
 
--- when the starting cutscene ends (well, really any but who actually uses cutscenes? also this will work in all cutscenes anyways)
-script.on_event(defines.events.on_cutscene_cancelled, function (event)
-  local player = game.get_player(event.player_index)
-  local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
-
-  log("cutscene cancelled")
-  if player.cutscene_character then
-    log("cutscene canceled w/ character")
-    try_swap(player, skin)
-  elseif player.character then
-    log("cutscene cancelled with normal character")
-    try_swap(player, skin)
-  else
-    log("cutscene cancelled, player has no character")
-    global.cutscene_character = global.cutscene_character or {}
-    local character = global.cutscene_character[event.player_index]
-
-    if character then
-      player.set_controller{type=defines.controllers.character, character=character}
-      character.destructible = false
-    end
-  end
-end)
-
-function init()
+local function init()
   -- Space Exploration overrides players dying with its own respawn system
   if script.active_mods["space-exploration"] then
-    local se_respawn_event = remote.call("space-exploration", "get_on_player_respawned_event")
-    log("se active, event id: "..se_respawn_event)
-    script.on_event(se_respawn_event, on_player_respawned)
+    script.on_event(remote.call("space-exploration", "get_on_player_respawned_event"), on_player_respawned)
   else
-    log("se inactive")
     script.on_event(defines.events.on_player_respawned, on_player_respawned)
   end
 end
 script.on_init(init)
 script.on_load(init)
 
--- on join world (for the 1st time)
-script.on_event(defines.events.on_player_joined_game, function(event)
+-- when the starting cutscene ends (activates on all, logic only runs when ending the intro)
+script.on_event(defines.events.on_cutscene_cancelled, function (event)
+  local player = game.get_player(event.player_index)
+  local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
+
+  -- If the player doesn't have a character at the end of the cutscene, and we have a stored character for them to use
+  --  then we must be at the end of the intro crash site cutscene
+  if not player.character then
+    global.cutscene_character = global.cutscene_character or {}
+    local character = global.cutscene_character[event.player_index]
+
+    if character and character.valid then
+      log("Crash site cutscene ended, setting "..player.name.."'s character to saved "..character.name)
+      player.set_controller{type=defines.controllers.character, character=character}
+      character.destructible = true
+      global.cutscene_character[event.player_index] = nil
+    end
+  end
+end)
+
+-- When a player joins a game for the first time, only runs once
+script.on_event(defines.events.on_player_created, function(event)
   local player = game.get_player(event.player_index)
   local skin = settings.get_player_settings(player)["skins-factored-selected-skin"].value
-  log("Player " .. player.name .. " joined, setting skin to " .. skin)
 
-  local new_prototype_name = (skin == "engineer" and "character") or ("character-" .. skin)
+  -- For when the crash site cutscene isn't active (mutiplayer join, debug map, mod disabled cutscene)
+  local old_character = player.cutscene_character or player.character
 
-  global.cutscene_character = global.cutscene_character or {}
-  global.cutscene_character[event.player_index] = swap_character(player.cutscene_character, new_prototype_name, player)
+  -- Don't swap if we're already the skin we want to be (usually engineer)
+  local new_prototype_name = skin_to_prototype(skin)
+  if new_prototype_name == old_character.name then return end
+
+  log("Player " .. player.name .. " created, setting skin to " .. skin)
+  local character = swap_character(old_character, new_prototype_name, player)
+
+  -- if we're in the crash site cutscene (and swapping characters worked), save the new character to use at the end of it
+  if player.controller_type == defines.controllers.cutscene and character then
+    global.cutscene_character = global.cutscene_character or {}
+    global.cutscene_character[event.player_index] = character
+
+    -- Update our tracking of which skin the player is currently using
+    global.active_skin = global.active_skin or {}
+    global.active_skin[event.player_index] = skin
+  end
 end)

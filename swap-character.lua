@@ -3,7 +3,7 @@
 ]]
 
 -- https://lua-api.factorio.com/latest/LuaInventory.html
-function move_entity_inventory(from_entity, to_entity, inventory)
+local function move_entity_inventory(from_entity, to_entity, inventory)
   local from = from_entity.get_inventory(inventory)
   local to = to_entity.get_inventory(inventory)
 
@@ -19,7 +19,7 @@ function move_entity_inventory(from_entity, to_entity, inventory)
 end
 
 -- https://lua-api.factorio.com/latest/LuaControl.html
-function swap_character(old_character, new_prototype_name, player)
+local function swap_character(old_character, new_prototype_name, player)
   --local player = old_character.player -- may be nil if we're swapping a character in a cutscene
 
   if not old_character.valid then
@@ -132,17 +132,6 @@ function swap_character(old_character, new_prototype_name, player)
 
     if opened_self then player.opened = new_character end
     if hand_location then player.hand_location = hand_location end
-  --[[
-    this just puts the player into a weird softlock where they're in the cutscene mode & cant do anything, but can still run around as their character
-  else
-    log("attaching new character")
-    player.character = new_character
-
-  ]]
-  --[[else
-    global.cutscene_character = global.cutscene_character or {}
-    global.cutscene_character[player.index] = new_character
-    ]]
   end
 
   if open_gui then
@@ -159,3 +148,5 @@ function swap_character(old_character, new_prototype_name, player)
 
   return new_character
 end
+
+return swap_character
