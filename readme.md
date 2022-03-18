@@ -83,7 +83,7 @@ skins-factored-selected-skin-SKIN_ID=Description for the skins setting dropdown 
 Finally, add the following to your mod's `info.json`:
 ```json
   "dependencies": [
-    "skins-factored >= 0.1.1"
+    "skins-factored >= 0.1.2"
   ],
 ```
 If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. This library is *technically* compatable with other character selector mods, but it's very jank; players have to choose the default character (usually the engineer) before changing to a !skins character.  
