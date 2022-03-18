@@ -19,13 +19,9 @@ function move_entity_inventory(from_entity, to_entity, inventory)
 end
 
 -- https://lua-api.factorio.com/latest/LuaControl.html
-function swap_character(old_character, new_prototype_name)
-  local player = old_character.player
+function swap_character(old_character, new_prototype_name, player)
+  --local player = old_character.player -- may be nil if we're swapping a character in a cutscene
 
-  if not player then
-    log("Character swap failed; old_character must have a player attached to it")
-    return false
-  end
   if not old_character.valid then
     log("Character swap failed; old_character is invalid")
     return false
@@ -35,7 +31,7 @@ function swap_character(old_character, new_prototype_name)
     return false
   end
 
-  log("Turning " .. player.name .. "'s " .. old_character.name .. " into " .. new_prototype_name)
+  log("Turning " .. (player and (player.name .. "'s ") or "somebody's ") .. old_character.name .. " into " .. new_prototype_name)
 
   --[[ Create new character ]]
   local new_character = old_character.surface.create_entity{
@@ -48,6 +44,7 @@ function swap_character(old_character, new_prototype_name)
 
   -- [[ Properties ]]
   new_character.health = old_character.health
+  new_character.destructible = old_character.destructible
 
   -- [[ Robot things ]]
   -- Combat robots
@@ -57,7 +54,8 @@ function swap_character(old_character, new_prototype_name)
 
   -- Save the table of robots in the character's personal network
   -- The new_character doesn't have a logistic_cell yet, so we have to wait for the next tick to add the bots to it
-  if old_character.logistic_cell
+  if player
+   and old_character.logistic_cell
    and old_character.logistic_cell.logistic_network
    and old_character.logistic_cell.logistic_network.robots then
     global.orphaned_bots = global.orphaned_bots or {} -- create table if it doesn't exist
@@ -86,7 +84,6 @@ function swap_character(old_character, new_prototype_name)
 
 
   -- [[ Inventory ]]
-  local hand_location = player.hand_location
   local open_gui = old_character.opened
   old_character.cursor_stack.swap_stack(new_character.cursor_stack)
 
@@ -126,15 +123,31 @@ function swap_character(old_character, new_prototype_name)
 
   -- Attach the player to the new character
   -- Done at the end to avoid any jank caused by having different character properties for part of the script
-  if player then
-    local opened_self = player.opened_self  -- this gets reset when we set_controller
+  if old_character.player then
+    -- these get reset when we set_controller
+    local hand_location = player.hand_location
+    local opened_self = player.opened_self
+
     player.set_controller{type=defines.controllers.character, character=new_character}
+
     if opened_self then player.opened = new_character end
+    if hand_location then player.hand_location = hand_location end
+  --[[
+    this just puts the player into a weird softlock where they're in the cutscene mode & cant do anything, but can still run around as their character
+  else
+    log("attaching new character")
+    player.character = new_character
+
+  ]]
+  --[[else
+    global.cutscene_character = global.cutscene_character or {}
+    global.cutscene_character[player.index] = new_character
+    ]]
   end
+
   if open_gui then
     new_character.opened = open_gui
   end
-  player.hand_location = hand_location
 
   -- Tell space exploration that we swapped characters
   if script.active_mods["space-exploration"] then
@@ -144,5 +157,5 @@ function swap_character(old_character, new_prototype_name)
   --[[ Destroy old character ]]
   old_character.destroy()
 
-  return true
+  return new_character
 end
