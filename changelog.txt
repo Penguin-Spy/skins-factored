@@ -47,8 +47,16 @@ Date: 16.3.2022
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.2
-Date: 18.3.2022
+Date: 17.3.2022
   Features:
     - Proper handling of the crash site cutscene at the start of the game; characters will now show the correct skin during the cutscene.
   Fixes:
     - Initalize variables that would not be set when starting a new game, causing a crash.
+
+---------------------------------------------------------------------------------------------------
+Version: 0.1.3
+Date: 18.3.2022
+  Features:
+    - Informatron page with basic info.
+  Fixes:
+    - The message displayed when switching characters now uses the right prototype name for the engineer.

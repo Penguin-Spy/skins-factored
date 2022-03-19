@@ -4,6 +4,12 @@
 local util = require('util')
 local swap_character = require('swap-character')
 
+-- Register Informatron pages
+--  this conditional require is safe because if one player has the mod, all must have it and so our checksum will still match.
+if script.active_mods["informatron"] then
+  require('informatron')
+end
+
 --[[
   all are tables indexed by player_index
   global.changed_setting = temporary indicator for the on_runtime_mod_setting_changed handler that code changed the setting, not a player
@@ -79,7 +85,7 @@ commands.add_command("character", "command-help.character", function(command)
   -- Check if the player is already using the requested skin
   global.active_skin = global.active_skin or {}
   if command.parameter == global.active_skin[command.player_index] then
-    player.print{"command-output.character-already-skin", {"entity-name.character-"..command.parameter}}
+    player.print{"command-output.character-already-skin", {"entity-name."..skin_to_prototype(command.parameter)}}
     return
 
   -- Confirm the command is valid and safe to run
