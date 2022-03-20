@@ -34,17 +34,33 @@ local function swap_character(old_character, new_prototype_name, player)
   log("Turning " .. (player and (player.name .. "'s ") or "somebody's ") .. old_character.name .. " into " .. new_prototype_name)
 
   --[[ Create new character ]]
+
+  local position = old_character.position -- save current position
+  old_character.teleport(1) -- move the old char out of the way (relative)
+
+  -- find a safe, nearby position to put the character if they would be on top of something after swapping
+  position = old_character.surface.find_non_colliding_position(
+    new_prototype_name, -- prototype to check collision of
+    position, -- center
+    5,   -- radius limit
+    0.25 -- precision
+  ) or position
+
+  -- create new entity
   local new_character = old_character.surface.create_entity{
     name = new_prototype_name,
-    position = old_character.position,
+    position = position,
     force = old_character.force
   }
-  -- set direction outside of create_entity because that function doesn't appear to support 8-directional entities (it forces it to the 4 cardinals)
-  new_character.direction = old_character.direction
 
   -- [[ Properties ]]
   new_character.health = old_character.health
   new_character.destructible = old_character.destructible
+  new_character.direction = old_character.direction
+
+  new_character.character_personal_logistic_requests_enabled = old_character.character_personal_logistic_requests_enabled
+  new_character.allow_dispatching_robots = old_character.allow_dispatching_robots
+  new_character.selected_gun_index = old_character.selected_gun_index
 
   -- [[ Robot things ]]
   -- Combat robots
@@ -74,14 +90,6 @@ local function swap_character(old_character, new_prototype_name, player)
     end
     i = i + 1
   until consecutive_blanks > 50
-
-  new_character.character_personal_logistic_requests_enabled = old_character.character_personal_logistic_requests_enabled
-  new_character.allow_dispatching_robots = old_character.allow_dispatching_robots
-
-  new_character.selected_gun_index = old_character.selected_gun_index
-
-
-
 
   -- [[ Inventory ]]
   local open_gui = old_character.opened
@@ -120,6 +128,15 @@ local function swap_character(old_character, new_prototype_name, player)
     end
   end
   new_character.character_inventory_slots_bonus = new_character.character_inventory_slots_bonus - 999
+
+  -- Put new player into vehicle
+  if player.vehicle then
+    if player.vehicle.get_driver() == old_character then
+      player.vehicle.set_driver(new_character)
+    elseif player.vehicle.get_passenger and player.vehicle.get_passenger() == old_character then
+      player.vehicle.set_passenger(new_character)
+    end
+  end
 
   -- Attach the player to the new character
   -- Done at the end to avoid any jank caused by having different character properties for part of the script

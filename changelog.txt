@@ -60,3 +60,10 @@ Date: 18.3.2022
     - Informatron page with basic info.
   Fixes:
     - The message displayed when switching characters now uses the right prototype name for the engineer.
+
+---------------------------------------------------------------------------------------------------
+Version: 0.1.4
+Date: 19.3.2022
+  Features:
+    - Swapping characters while in a vehicle (driver or passenger) keeps you in the vehicle.
+    - If after swapping you would be inside a structure, you are moved outside of it. Fixes getting stuck in rocket silos or while being moved by a mod (SE cargo rocket).
