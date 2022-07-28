@@ -110,8 +110,8 @@ local function swap_character(old_character, new_prototype_name, player)
   local new_crafting_queue = {}
 
   -- grant temporary bonus slots to hold crafting materials while crafting is canceled & restarted (the crafting queue itself is read-only)
+  new_character.character_inventory_slots_bonus = old_character.character_inventory_slots_bonus + 999
   old_character.character_inventory_slots_bonus = old_character.character_inventory_slots_bonus + 999
-  new_character.character_inventory_slots_bonus = new_character.character_inventory_slots_bonus + 999
   -- Cancel crafting on old_character (to return items)
   if old_crafting_queue then
     -- must go in reverse order because the table changes as we cancel craftings
@@ -172,9 +172,16 @@ local function swap_character(old_character, new_prototype_name, player)
     new_character.opened = open_gui
   end
 
-  -- Tell space exploration that we swapped characters
-  if script.active_mods["space-exploration"] then
-    remote.call("space-exploration", "on_character_swapped", { old_character = old_character, new_character = new_character})
+  -- Inform all mods that we swapped characters
+  for interface_name, interface_functions in pairs(remote.interfaces) do
+    if interface_functions["on_character_swapped"] then
+      remote.call(interface_name, "on_character_swapped", {
+        old_unit_number = old_character.unit_number,
+        new_unit_number = new_character.unit_number,
+        old_character = old_character,
+        new_character = new_character
+      })
+    end
   end
 
   --[[ Destroy old character ]]

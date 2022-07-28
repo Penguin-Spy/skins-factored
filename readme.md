@@ -4,7 +4,7 @@
 This is a Factorio library mod that makes it easy for other mods to add custom characters (skins), with a character picker.  
 This mod takes a different approach than other skin-changer mods: instead of trying to extract the skins from multiple installed skin mods, it acts as a library for mods to include, meaning a player can install just one skin mod, or any number of them, and they'll all work as expected (if they use this library).
 
-This library was written to be compatible with almost all mods that edit the default character prototype. It is explicitly compatible with Jetpacks & Space Exploration.
+This library was written to be compatible with almost all mods that edit the default character prototype. It is explicitly compatible with [Jetpack](https://mods.factorio.com/mod/jetpack), [Space Exploration](https://mods.factorio.com/mod/space-exploration), and [RPG System](https://mods.factorio.com/mod/RPGsystem).
 
 # Usage
 This information is only for developers wanting to use this library! See the [mod portal](https://mods.factorio.com/mod/skins-factored) for information for players.
@@ -83,10 +83,10 @@ skins-factored-selected-skin-SKIN_ID=Description for the skins setting dropdown 
 Finally, add the following to your mod's `info.json`:
 ```json
   "dependencies": [
-    "skins-factored >= 0.1.4"
+    "skins-factored >= 0.1.6"
   ],
 ```
-If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. This library is *technically* compatable with other character selector mods, but it's very jank; players have to choose the default character (usually the engineer) before changing to a !skins character.  
+If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. This library is *technically* compatable with other character selector mods, but it's kinda jank; players have to choose the default character (usually the engineer) before changing to a !skins character. I intend to improve this in the future.  
 If you are creating a new skin mod and are using this library, *please* use a hard dependency, and **do not** try to overwrite the default `character` if this mod isn't found, that will simply create the plentiful bundle of issues that this library was written to avoid.
 
 # Legal stuff

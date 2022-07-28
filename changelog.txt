@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.6
+Date: 27.7.2022
+  Compatibility:
+    - Call all mods' on_character_swapped event handler, improving compatibility with many character-related mods.
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.5
 Date: 27.7.2022
   Features:
