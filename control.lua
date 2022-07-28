@@ -210,6 +210,7 @@ script.on_event(defines.events.on_player_created, function(event)
 
   -- For when the crash site cutscene isn't active (mutiplayer join, debug map, mod disabled cutscene)
   local old_character = player.cutscene_character or player.character
+  if not old_character then return end  -- abort if ran in a scenario without a character
 
   -- Don't swap if we're already the skin we want to be (usually engineer)
   local new_prototype_name = skin_to_prototype(skin)

@@ -67,3 +67,12 @@ Date: 19.3.2022
   Features:
     - Swapping characters while in a vehicle (driver or passenger) keeps you in the vehicle.
     - If after swapping you would be inside a structure, you are moved outside of it. Fixes getting stuck in rocket silos or while being moved by a mod (SE cargo rocket).
+
+---------------------------------------------------------------------------------------------------
+Version: 0.1.5
+Date: 27.7.2022
+  Features:
+    - Copy crafting queue progress when switching characters.
+  Fixes:
+    - Fix crash when starting scenarios without a player character.
+    - Fix items stuck in crafting queue by full inventory being both created and re-queued when switching characters. Items will not be re-queued but will still drop on the ground (this is not possible to prevent).

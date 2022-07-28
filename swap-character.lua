@@ -96,15 +96,26 @@ local function swap_character(old_character, new_prototype_name, player)
   old_character.cursor_stack.swap_stack(new_character.cursor_stack)
 
   -- Crafting queue
+
+  -- If an item is already crafted but blocked by full inventory, we can't un-craft it and it will be put in the buffer inventory slots (& then dropped on the ground when those are removed).
+  -- We reset the crafting progress and cancel the craft anyways to prevent the item from being saved & re-crafted again by the new character.
+  if(old_character.crafting_queue_progress > 1) then
+    old_character.crafting_queue_progress = 0
+    old_character.cancel_crafting(old_character.crafting_queue[1])
+  end
+
   -- Save crafting queue
   local old_crafting_queue = old_character.crafting_queue
+  local old_crafting_queue_progress = old_character.crafting_queue_progress
   local new_crafting_queue = {}
-  -- Cancel crafting on old_character (to return items)
+
+  -- grant temporary bonus slots to hold crafting materials while crafting is canceled & restarted (the crafting queue itself is read-only)
   old_character.character_inventory_slots_bonus = old_character.character_inventory_slots_bonus + 999
   new_character.character_inventory_slots_bonus = new_character.character_inventory_slots_bonus + 999
+  -- Cancel crafting on old_character (to return items)
   if old_crafting_queue then
     -- must go in reverse order because the table changes as we cancel craftings
-    for i=old_character.crafting_queue_size, 1, -1 do
+    for i = old_character.crafting_queue_size, 1, -1 do
       if old_character.crafting_queue and old_character.crafting_queue[i] then
         local item = old_crafting_queue[i]
         table.insert(new_crafting_queue, item)
@@ -112,8 +123,8 @@ local function swap_character(old_character, new_prototype_name, player)
       end
     end
   end
-  -- Move inventories before beginning crafting
 
+  -- Move inventories before beginning crafting
   -- Be careful when swapping armor, make sure to paste armor before moving items, otherwise items get dumped/deleted
   move_entity_inventory(old_character, new_character, defines.inventory.character_armor)
   move_entity_inventory(old_character, new_character, defines.inventory.character_main)
@@ -123,9 +134,15 @@ local function swap_character(old_character, new_prototype_name, player)
 
   -- start crafting all items in the queue again
   if old_crafting_queue then
-    for _, item in pairs(new_crafting_queue) do
-      new_character.begin_crafting{ count=item.count, recipe=item.recipe }
+    -- must go in reverse order because the table may change as we start crafting
+    for i = #new_crafting_queue, 1, -1 do
+      if new_crafting_queue and new_crafting_queue[i] then
+        local item = new_crafting_queue[i]
+        new_character.begin_crafting{ count=item.count, recipe=item.recipe, silent=true }
+      end
     end
+    -- progress is > 1 if crafting is stopped due to full inventory, but writing > 1 causes error
+    new_character.crafting_queue_progress = math.min(old_crafting_queue_progress, 1)
   end
   new_character.character_inventory_slots_bonus = new_character.character_inventory_slots_bonus - 999
 
