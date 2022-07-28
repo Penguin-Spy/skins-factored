@@ -11,6 +11,8 @@ This information is only for developers wanting to use this library! See the [mo
 
 Adding support for this mod is simple, and can be done without losing support for other character-selecting mods.  
 You can add multiple skins in one mod if you wish, just follow the steps for each skin you want to add, making sure to use a unique skin id for each.  
+Before modifying the tables in both phases, you should first check that `skins_factored.schema_version == 1` (the current version).
+
 
 ### `settings.lua`
 First, add the following line to your `settings.lua`:

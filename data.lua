@@ -17,4 +17,7 @@ registered_skins["skin-id"] = { -- the key is the identifier for the skin, used 
   corpse_animation = {} -- AnimationVariations, the character-corpse prototype's pictures table, REQUIRED
 }
 ]]
-skins_factored = { registered_skins = {} }
+skins_factored = {
+  schema_version = 1,
+  registered_skins = {}
+}

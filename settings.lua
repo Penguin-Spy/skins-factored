@@ -9,4 +9,7 @@
   THIS MUST BE THE SAME skin_id YOU GIVE IN THE DATA STAGE!
 ]]
 
-skins_factored = { registered_skin_ids = {} }
+skins_factored = {
+  schema_version = 1,
+  registered_skin_ids = {}
+}
