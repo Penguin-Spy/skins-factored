@@ -10,6 +10,7 @@ This library was written to be compatible with almost all mods that edit the def
 This information is only for developers wanting to use this library! See the [mod portal](https://mods.factorio.com/mod/skins-factored) for information for players.
 
 Adding support for this mod is simple, and can be done without losing support for other character-selecting mods.  
+You can add multiple skins in one mod if you wish, just follow the steps for each skin you want to add, making sure to use a unique skin id for each.  
 
 ### `settings.lua`
 First, add the following line to your `settings.lua`:
@@ -52,7 +53,8 @@ skins_factored.registered_skins["your-skin-id-here"] = {
 }
 ```
 The `animations` key is identical to what you would overwrite the default `character.animations` table with. The `corpse_animations` key is identical to what you would overwrite the default `character-corpse.pictures` table with.  
-The number of animations and what armors they apply to must match between `animations` and `corpse_animations`.
+The number of animations and what armors they apply to must match between `animations` and `corpse_animations`.  
+Of course, your code doesn't need to look exactly like the above example, it just needs to add a table with the required fields to the registered skins table: `skins_factored.registered_skins["your-skin-id-here"]`.
 
 Factorio wiki documentation for types:  
 - [Animation](https://wiki.factorio.com/Types/Animation)
@@ -86,7 +88,7 @@ Finally, add the following to your mod's `info.json`:
     "skins-factored >= 0.1.6"
   ],
 ```
-If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. This library is *technically* compatable with other character selector mods, but it's kinda jank; players have to choose the default character (usually the engineer) before changing to a !skins character. I intend to improve this in the future.  
+If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. Don't forget to check if the `skins_factored` table exists before writing to it! This library is *technically* compatable with other character selector mods, but it's kinda jank; players have to choose the default character (usually the engineer) before changing to a !skins character. I intend to improve this in the future.  
 If you are creating a new skin mod and are using this library, *please* use a hard dependency, and **do not** try to overwrite the default `character` if this mod isn't found, that will simply create the plentiful bundle of issues that this library was written to avoid.
 
 # Legal stuff
