@@ -1,29 +1,47 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.0.1
-Date: 23.10.2021
+Version: 0.1.5
+Date: 27.7.2022
   Features:
-    - Auto generating prototypes
+    - Copy crafting queue progress when switching characters.
+  Bugfixes:
+    - Fix crash when starting scenarios without a player character.
+    - Fix items stuck in crafting queue by full inventory being both created and re-queued when switching characters. Items will not be re-queued but will still drop on the ground (this is not possible to prevent).
 
 ---------------------------------------------------------------------------------------------------
-Version: 0.0.2
-Date: 24.10.2021
+Version: 0.1.4
+Date: 19.3.2022
   Features:
-    - Swapping characters fully functional (all data copied)
-    - Saving settings, no reading yet
+    - Swapping characters while in a vehicle (driver or passenger) keeps you in the vehicle.
+    - If after swapping you would be inside a structure, you are moved outside of it. Fixes getting stuck in rocket silos or while being moved by a mod (SE cargo rocket).
 
 ---------------------------------------------------------------------------------------------------
-Version: 0.0.3
-Date: 25.10.2021
+Version: 0.1.3
+Date: 18.3.2022
   Features:
-    - Localization
-    - Swapping character when setting changed
-    - Choose right character on respawn
+    - Informatron page with basic info.
+  Bugfixes:
+    - The message displayed when switching characters now uses the right prototype name for the engineer.
 
 ---------------------------------------------------------------------------------------------------
-Version: 0.0.4
-Date: 7.3.2022
-  Fixes:
-    - Better compatability with Space Exploration
+Version: 0.1.2
+Date: 17.3.2022
+  Features:
+    - Proper handling of the crash site cutscene at the start of the game; characters will now show the correct skin during the cutscene.
+  Bugfixes:
+    - Initalize variables that would not be set when starting a new game, causing a crash.
+
+---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 16.3.2022
+  Features:
+    - Notify the user if they try to swap to the skin they're currently using, instead of re-swapping to the same one again.
+    - Reset skin setting if swapping characters fails.
+    - Better validation before swapping characters, preventing some possible crashes.
+    - Correctly set player's facing direction when swapping to include diagonal directions.
+  Bugfixes:
+    - Only attempt to change a player's skin when they change the skin setting, instead of when any mods' settings change (whoops lol).
+  Compatibility:
+    - Improve behavior with other skin changing mods. It is now possible to swap between other mods' characters by first selecting the engineer.
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.0
@@ -34,45 +52,29 @@ Date: 7.3.2022
     - Generate corpse animation map from character's armor list
 
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.1
-Date: 16.3.2022
-  Features:
-    - Notify the user if they try to swap to the skin they're currently using, instead of re-swapping to the same one again.
-    - Reset skin setting if swapping characters fails.
-    - Better validation before swapping characters, preventing some possible crashes.
-    - Correctly set player's facing direction when swapping to include diagonal directions.
-  Fixes:
-    - Slightly better compatability with other skin changing mods. It is now possible to swap between other mods' characters by first selecting the engineer.
-    - Only attempt to change a player's skin when they change the skin setting, instead of when any mods' settings change (whoops lol).
+Version: 0.0.4
+Date: 7.3.2022
+  Compatibility:
+    - Call Space Exploration's on_character_swapped event
 
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.2
-Date: 17.3.2022
+Version: 0.0.3
+Date: 25.10.2021
   Features:
-    - Proper handling of the crash site cutscene at the start of the game; characters will now show the correct skin during the cutscene.
-  Fixes:
-    - Initalize variables that would not be set when starting a new game, causing a crash.
+    - Swapping character when setting changed
+    - Choose right character on respawn
+  Locale:
+    - Added English translation
 
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.3
-Date: 18.3.2022
+Version: 0.0.2
+Date: 24.10.2021
   Features:
-    - Informatron page with basic info.
-  Fixes:
-    - The message displayed when switching characters now uses the right prototype name for the engineer.
+    - Swapping characters fully functional (all data copied)
+    - Saving settings, no reading yet
 
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.4
-Date: 19.3.2022
+Version: 0.0.1
+Date: 23.10.2021
   Features:
-    - Swapping characters while in a vehicle (driver or passenger) keeps you in the vehicle.
-    - If after swapping you would be inside a structure, you are moved outside of it. Fixes getting stuck in rocket silos or while being moved by a mod (SE cargo rocket).
-
----------------------------------------------------------------------------------------------------
-Version: 0.1.5
-Date: 27.7.2022
-  Features:
-    - Copy crafting queue progress when switching characters.
-  Fixes:
-    - Fix crash when starting scenarios without a player character.
-    - Fix items stuck in crafting queue by full inventory being both created and re-queued when switching characters. Items will not be re-queued but will still drop on the ground (this is not possible to prevent).
+    - Auto generating prototypes
