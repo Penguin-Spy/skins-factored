@@ -1,12 +1,19 @@
 --[[ control.lua © Penguin_Spy 2022 ]]
 local util = require 'util'
 local swap_character = require 'swap-character'
+local GUI = require 'gui'
+
+remote_interface = {}
 
 -- Register Informatron pages
 --  this conditional require is safe because if one player has the mod, all must have it and so our checksum will still match.
 if script.active_mods["informatron"] then
-  require('informatron')
+  local Informatron = require('informatron')(GUI)
+  remote_interface.informatron_menu = Informatron.menu
+  remote_interface.informatron_page_content = Informatron.page_content
 end
+
+remote.add_interface("skins-factored", remote_interface)
 
 
 -- [[ Local functions ]]
@@ -152,6 +159,24 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
   end
 end)
 
+script.on_event(defines.events.on_gui_click, GUI.on_clicked)
+script.on_event(defines.events.on_gui_closed, GUI.on_closed)
+
+-- DEBUG
+commands.add_command("gui", "command-help.gui", function(command)
+  local player = game.get_player(command.player_index)
+
+  if not command.parameter then
+    GUI.create_window(player)
+    return
+  end
+
+  if command.parameter == "show" then
+    GUI.create_button(player)
+  elseif command.parameter == "hide" then
+    GUI.remove_button(player)
+  end
+end)
 
 --[[ Swapping to chosen character again (these should not display any confirmation message) ]]
 
@@ -242,5 +267,24 @@ end)
 script.on_event(defines.events.on_player_created, function(event)
   local player = game.get_player(event.player_index)
 
+  -- if Informatron isn't present, add our own button for the GUI
+  if not script.active_mods["informatron"] then
+    GUI.create_button(player)
+  end
+
   swap_on_player_created(player)
 end)
+
+-- when loaded mods change, update the button in the top left
+--[[script.on_configuration_changed(function ()
+  if script.active_mods["informatron"] then
+    for _, player in pairs(game.players) do
+      GUI.remove_button(player) -- it is loaded, remove our button from the top gui if present
+    end
+  else
+    for _, player in pairs(game.players) do
+      GUI.create_button(player) -- it isn't loaded, add our button to the top gui
+    end
+  end
+end)
+]]
