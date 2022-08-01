@@ -1,9 +1,12 @@
 --[[ control.lua © Penguin_Spy 2022 ]]
 local util = require 'util'
 local swap_character = require 'swap-character'
-local GUI = require 'gui'
+local PreviewSurface = require 'preview_surface'
+local GUI = require('gui')(PreviewSurface)
 
 remote_interface = {}
+
+remote_interface.on_character_swapped = GUI.on_character_swapped
 
 -- Register Informatron pages
 --  this conditional require is safe because if one player has the mod, all must have it and so our checksum will still match.
@@ -19,7 +22,7 @@ remote.add_interface("skins-factored", remote_interface)
 -- [[ Local functions ]]
 
 -- The end user sees "engineer", but internally it is called just "character", not "character-engineer"
-local function skin_to_prototype(skin)
+function skin_to_prototype(skin)
   return (skin == "engineer" and "character") or ("character-" .. skin)
 end
 local function prototype_to_skin(prototype)
@@ -48,7 +51,7 @@ local function update_active_skin(player, skin)
 end
 
 -- Safety checks used in multiple places
-local function try_swap(player, skin)
+function try_swap(player, skin, ignore_already)
   local available_skins = util.split(settings.global["skins-factored-all-skins"].value, ";")
   local character = player.character or player.cutscene_character
 
@@ -56,6 +59,12 @@ local function try_swap(player, skin)
   if not character then
     player.print{"command-output.character-no-character"}
     return false
+  end
+
+  -- Check if the player is already using the requested skin
+  if (not ignore_already) and (skin == global.active_skin[player.index]) then
+    player.print{"command-output.character-already-skin", {"entity-name."..skin_to_prototype(skin)}}
+    return
   end
 
   -- Check if the player is currently using a registered skin's character.
@@ -91,13 +100,8 @@ commands.add_command("character", "command-help.character", function(command)
   local player = game.get_player(command.player_index)
   local available_skins = util.split(settings.global["skins-factored-all-skins"].value, ";")
 
-  -- Check if the player is already using the requested skin
-  if command.parameter == global.active_skin[command.player_index] then
-    player.print{"command-output.character-already-skin", {"entity-name."..skin_to_prototype(command.parameter)}}
-    return
-
   -- Confirm the command is valid and safe to run
-  elseif command.parameter then
+  if command.parameter then
     -- Check if the skin that the player requested exists
     local skin = is_skin_available(command.parameter, available_skins)
     if not skin then
@@ -110,7 +114,7 @@ commands.add_command("character", "command-help.character", function(command)
     local success = try_swap(player, skin)
     if success then
       player.print{"command-output.character-success", {"entity-name."..success}}
-    end
+    end -- errors are printed by try_swap
 
   -- No parameter passed, list all skins
   else
@@ -139,6 +143,8 @@ end)
 -- Can fail for all the reasons the command can, we can't reset the setting because we don't know
 --   what it was before.
 script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
+  if not (event.setting == "skins-factored-selected-skin") then return end
+
   local player = game.get_player(event.player_index)
   local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
 
@@ -159,24 +165,22 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
   end
 end)
 
+-- Pass events to GUI
 script.on_event(defines.events.on_gui_click, GUI.on_clicked)
 script.on_event(defines.events.on_gui_closed, GUI.on_closed)
-
--- DEBUG
-commands.add_command("gui", "command-help.gui", function(command)
-  local player = game.get_player(command.player_index)
-
-  if not command.parameter then
-    GUI.create_window(player)
-    return
-  end
-
-  if command.parameter == "show" then
-    GUI.create_button(player)
-  elseif command.parameter == "hide" then
-    GUI.remove_button(player)
+-- keybind
+script.on_event("skins_factored_toggle_interface", function(event)
+    local player = game.get_player(event.player_index)
+    GUI.toggle_window(player)
+end)
+-- shortcut bar button
+script.on_event(defines.events.on_lua_shortcut, function(event)
+  if event.prototype_name == "skins_factored_toggle_interface" then
+    local player = game.get_player(event.player_index)
+    GUI.toggle_window(player)
   end
 end)
+
 
 --[[ Swapping to chosen character again (these should not display any confirmation message) ]]
 
@@ -186,7 +190,7 @@ local function swap_on_player_respawned(event)
   local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
   log("Player " .. player.name .. " respawned, setting skin to " .. skin)
 
-  try_swap(player, skin)
+  try_swap(player, skin, true)
 end
 
 -- When the starting cutscene ends (activates on all, logic only runs when ending the intro)
@@ -241,18 +245,25 @@ end
 
 -- [[ Initalization ]]
 
--- Runs every time the save is loaded (including the first time), can't edit the global table
-local function initalize()
-  -- Space Exploration overrides players dying with its own respawn system
-  if script.active_mods["space-exploration"] then
-    script.on_event(remote.call("space-exploration", "get_on_player_respawned_event"), swap_on_player_respawned)
-  else
-    script.on_event(defines.events.on_player_respawned, swap_on_player_respawned)
+-- Ensures players have GUI & PreviewSurface properly set up
+local function initalize_player(player)
+  PreviewSurface.initalize_player(player)
+
+  -- if Informatron isn't present, add our own button for the GUI
+  if not script.active_mods["informatron"] then
+    GUI.create_button(player)
+  else  -- if it is, remove our button (if it exists)
+    GUI.remove_button(player)
+  end
+
+  -- if the player doesn't have an active skin, assume it's the engineer (this only happens when adding the mod to a preexisting save)
+  if not global.active_skin[player.index] then
+    global.active_skin[player.index] = "engineer"
   end
 end
-script.on_load(initalize)  -- Runs every time the save is loaded (except for the first time)
 
-script.on_init(function () -- Runs once on new save
+-- Runs once on new save, as well as when configuration changes. ensures All The Things are set up, including all players
+local function initalize()
   -- All are tables indexed by player_index
   global.active_skin = global.active_skin or {}               -- permanent list of what this player's current skin is. may be not present for a player if they haven't changed skins yet
 
@@ -260,31 +271,38 @@ script.on_init(function () -- Runs once on new save
   global.orphaned_bots = global.orphaned_bots or {}           -- temporary storage for bots that need to be attached to a player's personal logistics network once it becomes available
   global.cutscene_character = global.cutscene_character or {} -- temporary list for setting a player's character after the intro cutscene
 
-  initalize()
-end)
+  global.open_skins_table = global.open_skins_table or {}     -- temporary list for getting the element of the skins_table for the player's current open GUI
 
--- When a player joins a save for the first time, only runs once
+  PreviewSurface.initalize()
+
+  for _, player in pairs(game.players) do
+    initalize_player(player)
+  end
+end
+
+-- Runs every time the save is loaded (including the first time). Can't edit the global table
+local function loadalize()
+  -- Space Exploration overrides players dying with its own respawn system
+  if script.active_mods["space-exploration"] then
+    script.on_event(remote.call("space-exploration", "get_on_player_respawned_event"), swap_on_player_respawned)
+  else
+    script.on_event(defines.events.on_player_respawned, swap_on_player_respawned)
+  end
+end
+
+script.on_load(loadalize)  -- Runs every time the save is loaded (except for the first time)
+script.on_init(function () -- Runs once on new save
+  initalize()
+  loadalize()
+end)
+script.on_configuration_changed(initalize) -- When loaded mods change, update GUI & PreviewSurface
+
+
+-- Runs when a player joins a save for the first time, only runs once
 script.on_event(defines.events.on_player_created, function(event)
   local player = game.get_player(event.player_index)
 
-  -- if Informatron isn't present, add our own button for the GUI
-  if not script.active_mods["informatron"] then
-    GUI.create_button(player)
-  end
+  initalize_player(player)
 
   swap_on_player_created(player)
 end)
-
--- when loaded mods change, update the button in the top left
---[[script.on_configuration_changed(function ()
-  if script.active_mods["informatron"] then
-    for _, player in pairs(game.players) do
-      GUI.remove_button(player) -- it is loaded, remove our button from the top gui if present
-    end
-  else
-    for _, player in pairs(game.players) do
-      GUI.create_button(player) -- it isn't loaded, add our button to the top gui
-    end
-  end
-end)
-]]

@@ -3,249 +3,184 @@
 ]]
 local mod_gui = require 'mod-gui'
 
-local GUI = {}
+local function tags(table)
+  table.mod = script.mod_name
+  return table
+end
 
+return function(PreviewSurface)
+  local GUI = {}
+  local selector_open_name = "skins_factored_selector_open"
+  local selector_window_name = "skins_factored_selector_window"
 
-local item_sprites = {"inserter", "transport-belt", "stone-furnace", "assembling-machine-3", "logistic-chest-storage", "sulfur", "utility-science-pack", "laser-turret"}
+  -- Creates (if not present) the inner frame containing just the skin selector buttons
+  function GUI.attach_skins_table(parent, player)
 
+    if not parent.skins_table then
+      local skins_table = parent.add{type="table", column_count=5, style="skins_factored_skins_table", name="skins_table"}
+      global.open_skins_table[player.index] = skins_table
 
-local function build_sprite_buttons(player)
-    local player_global = global.players[player.index]
+      local available_skins = util.split(settings.global["skins-factored-all-skins"].value, ";")
+      for _, skin in pairs(available_skins) do
+        local skin_preview_entity = PreviewSurface.get_skin_preview(skin, player)
 
-    local button_table = player.gui.screen["skins_factored_selector_window"].content_frame.button_frame.button_table
-    button_table.clear()
+        local skin_button = skins_table.add{type="button", style="skins_factored_skin_button", caption={"entity-description."..skin_preview_entity.name},
+          tags=tags{action="try_swap", skin=skin}
+        }
 
-    local number_of_buttons = player_global.button_count
-    for i = 1, number_of_buttons do
-        local sprite_name = item_sprites[i]
-        local button_style = (sprite_name == player_global.selected_item) and "yellow_slot_button" or "recipe_slot_button"
-        button_table.add{type="sprite-button", sprite=("item/" .. sprite_name), tags={action="ugg_select_button", item_name=sprite_name}, style=button_style}
+        local entity_frame = skin_button.add{type="frame", style="skins_factored_skin_button_inner_frame", ignored_by_interaction = true, name="entity_frame"}
+
+        local entity_camera = entity_frame.add{type="camera", style="skins_factored_skin_button_camera", name="entity_camera",
+          position=skin_preview_entity.position, surface_index=skin_preview_entity.surface.index, zoom=2
+        }
+        entity_camera.entity = skin_preview_entity
+
+        skin_button.add{type="label", style="skins_factored_skin_label", caption={"entity-name."..skin_preview_entity.name}, ignored_by_interaction = true}
+      end
     end
-end
+  end
 
-local function create_window(player)    -- creates independent gui window containing the picker frame
+  -- Creates independent gui window containing the picker frame
+  local function create_window(player)
+    local screen_element = player.gui.screen
+    local main = screen_element.add{type="frame", style="skins_factored_selector_window", name=selector_window_name, direction = "vertical"}
+    main.auto_center = true
 
-  -- init these things
-  global.players = global.players or {}
-  global.players[player.index] = global.players[player.index] or { controls_active = true, button_count = 0, selected_item = nil }
+    local titlebar = main.add{type="flow", name="titlebar"}
+    titlebar.drag_target = main
 
-  -- create GUI
-  local screen_element = player.gui.screen
-  local main = screen_element.add{type="frame", name="skins_factored_selector_window", direction = "vertical"}
-  main.style.size = {385, 165}
-  main.auto_center = true
+    local title = titlebar.add{type="label", style="frame_title", caption={"skins-factored.title_skins-factored"}, ignored_by_interaction = true}
+    local drag  = titlebar.add{type="empty-widget", style = "skins_factored_titlebar_drag", ignored_by_interaction = true}
+    local close = titlebar.add{type="sprite-button", style = "frame_action_button", tooltip={"gui.close-instruction"},
+      sprite = "utility/close_white", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black",
+      tags = tags{action = "toggle_window"}
+    }
 
-  local titlebar = main.add{type="flow", name="titlebar"}
-  titlebar.drag_target = main
+    main.add{type="label", style="skins_factored_skin_selector_label", caption={"skins-factored.about"}}
+    main.add{type="label", style="skins_factored_skin_selector_label", caption={"skins-factored.skin_selector_instructions"}}
 
-  local title = titlebar.add{type="label", name="title", caption={"skins-factored.title_skins-factored"}, style="frame_title", ignored_by_interaction = true}
-  --title.style.horizontally_stretchable = true
-  local drag = titlebar.add{type = "empty-widget", style = "flib_titlebar_drag_handle", ignored_by_interaction = true}
-  --drag.style.horizontally_stretchable = "on"
+    -- need "scroll-pane" to put picker frame in
+    local picker_pane = main.add{type="scroll-pane", name="picker_pane", vertical_scroll_policy = "auto-and-reserve-space"}
 
-  local close = titlebar.add{type="sprite-button", style="frame_action_button",
-    sprite = "utility/close_white", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black",
-    tags = {action = "toggle", mod = "skins-factored"}
-  }
+    local picker_frame = picker_pane.add{type="frame", style="inside_shallow_frame_with_padding", direction="vertical", name="picker_frame"}
 
-  -- gui.close-instruction
+    main.visible = false
+    return main
+  end
 
-  local content_frame = main.add{type="frame", name="content_frame", direction="vertical", style="ugg_content_frame"}
-  local controls_flow = content_frame.add{type="flow", name="controls_flow", direction="horizontal", style="ugg_controls_flow"}
+  -- Ran every time the window is opened or the player changes skin via GUI (window is guaranteed to exist)
+  function GUI.update_skins_table(parent, player)
+    local skins_table = parent.skins_table
+    global.open_skins_table[player.index] = skins_table
 
-  controls_flow.add{type="button", name="ugg_controls_toggle", caption="Deactivate"}
+    for _, skin_button in pairs(skins_table.children) do
+      if skin_button.tags.skin == global.active_skin[player.index] then
+        --if skin_button.enabled then -- if it was enabled, it was displaying the preview
+          skin_button.entity_frame.entity_camera.entity = player.character
+        --end
+        skin_button.enabled = false
+      else
+        --if not skin_button.enabled then -- if it wasn't enabled, it was displaying the player
+          skin_button.entity_frame.entity_camera.entity = PreviewSurface.get_skin_preview(skin_button.tags.skin, player)
+        --end
+        skin_button.enabled = true
+      end
+      --skin_button.style = skin_button.tags.skin == global.active_skin[player.index] and "skins_factored_skin_button_selected" or "skins_factored_skin_button"
 
-  controls_flow.add{type="slider", name="ugg_controls_slider", value=0, minimum_value=0, maximum_value=#item_sprites, style="notched_slider"}
-  controls_flow.add{type="textfield", name="ugg_controls_textfield", text="0", numeric=true, allow_decimal=false, allow_negative=false, style="ugg_controls_textfield"}
+      --
+    end
+  end
 
-  local button_frame = content_frame.add{type="frame", name="button_frame", direction="horizontal", style="ugg_deep_frame"}
-  button_frame.add{type="table", name="button_table", column_count=#item_sprites, style="filter_slot_table"}
+  -- Show/Hide the independent skin selector window
+  function GUI.toggle_window(player)
+    local selector_window = player.gui.screen[selector_window_name]
 
-  build_sprite_buttons(player)
+    -- if the window doesn't exist, create it
+    if not selector_window then
+      selector_window = create_window(player)
+      GUI.attach_skins_table(selector_window.picker_pane.picker_frame, player)
+    end
 
-  return main
-end
-
--- DEBUG
-GUI.show_window = show_window
-
-local function toggle_window(player)
-  local selector_window = player.gui.screen["skins_factored_selector_window"]
-
-  if not selector_window then -- if the window doesn't exist, create it
-    player.opened = create_window(player)
-
-  else  -- otherwise, toggle its visiblity
+    -- toggle window visiblity
     selector_window.visible = not selector_window.visible
-
     if selector_window.visible then
       player.opened = selector_window
+      GUI.update_skins_table(selector_window.picker_pane.picker_frame, player)
     else
-      player.opened = nil
+      player.opened = defines.gui_type.none
+      global.open_skins_table[player.index] = nil
     end
   end
 
-end
-
-function GUI.create_button(player)        -- creates top-left button to open the gui
-  local buttons = mod_gui.get_button_flow(player)
-  if not buttons["skins_factored_selector_open"] then
-    buttons.add{
-      type="sprite-button",
-      name="skins_factored_selector_open",
-      sprite ="entity/character",
-      tooltip = {"skins-factored.skin_selector"},
-      tags = {action = "toggle", mod = "skins-factored"}
-    }
-  end
-end
-
-function GUI.remove_button(player)        -- removes top-left button if it's present
-  local buttons = mod_gui.get_button_flow(player)
-  if buttons["skins_factored_selector_open"] then
-    buttons["skins_factored_selector_open"].destroy()
-  end
-end
-
-function GUI.create_picker_frame(player)  -- creates inner frame containing just the skin selector buttons
-
-end
-
-function GUI.on_clicked(event)            -- handles all button clicks (checks if they're relevant)
-  local element = event.element
-  if not element then return end
-
-  if --[[util.string_starts_with(element.name, "skins_factored") or]] element.tags.mod == "skins-factored" then
-    local player = game.players[event.player_index]
-
-    if --[[element.name == "skins_factored_selector_open" or]] element.tags.action == "toggle" then
-      toggle_window(player)
+  -- Creates top-left mod-gui button to open the gui
+  function GUI.create_button(player)
+    local buttons = mod_gui.get_button_flow(player)
+    if not buttons[selector_open_name] then
+      buttons.add{
+        type="sprite-button",
+        name=selector_open_name,
+        sprite ="entity/character",
+        tooltip = {"skins-factored.skin_selector"},
+        tags = tags{action = "toggle_window"}
+      }
     end
   end
-end
 
-function GUI.on_closed(event)             -- handles closing the gui (checks if ours is open)
-  local element = event.element
-  if not element then return end
-
-  if element.name == "skins_factored_selector_window" and element.visible then
-    local player = game.players[event.player_index]
-
-    toggle_window(player)
+  -- Removes top-left mod-gui button if it's present
+  function GUI.remove_button(player)
+    local buttons = mod_gui.get_button_flow(player)
+    if buttons[selector_open_name] then
+      buttons[selector_open_name].destroy()
+    end
   end
-end
 
+  -- Handles all button clicks (checks if they're relevant)
+  function GUI.on_clicked(event)
+    local element = event.element
+    if not element then return end
 
-return GUI
+    if element.tags.mod == script.mod_name then
+      local player = game.players[event.player_index]
 
-
---[[
-local item_sprites = {"inserter", "transport-belt", "stone-furnace", "assembling-machine-3", "logistic-chest-storage", "sulfur", "utility-science-pack", "laser-turret"}
-
-
-local function build_sprite_buttons(player)
-    local player_global = global.players[player.index]
-
-    local button_table = player.gui.screen.ugg_main_frame.content_frame.button_frame.button_table
-    button_table.clear()
-
-    local number_of_buttons = player_global.button_count
-    for i = 1, number_of_buttons do
-        local sprite_name = item_sprites[i]
-        local button_style = (sprite_name == player_global.selected_item) and "yellow_slot_button" or "recipe_slot_button"
-        button_table.add{type="sprite-button", sprite=("item/" .. sprite_name), tags={action="ugg_select_button", item_name=sprite_name}, style=button_style}
+      if element.tags.action == "toggle_window" then
+        GUI.toggle_window(player)
+      elseif element.tags.action == "try_swap" then
+        try_swap(player, element.tags.skin)
+        GUI.update_skins_table(element.parent.parent, player) -- march back up the element tree to get the correct parent frame
+      end
     end
-end
-
-local function create_gui(player)
-
-  -- init these things
-  global.players = global.players or {}
-  global.players[player.index] = global.players[player.index] or { controls_active = true, button_count = 0, selected_item = nil }
-
-  -- create GUI
-  local screen_element = player.gui.screen
-  local main_frame = screen_element.add{type="frame", name="ugg_main_frame", caption={"skins-factored.title_skins-factored"}}
-  main_frame.style.size = {385, 165}
-  main_frame.auto_center = true
-
-  local content_frame = main_frame.add{type="frame", name="content_frame", direction="vertical", style="ugg_content_frame"}
-  local controls_flow = content_frame.add{type="flow", name="controls_flow", direction="horizontal", style="ugg_controls_flow"}
-
-  controls_flow.add{type="button", name="ugg_controls_toggle", caption="Deactivate"}
-
-  controls_flow.add{type="slider", name="ugg_controls_slider", value=0, minimum_value=0, maximum_value=#item_sprites, style="notched_slider"}
-  controls_flow.add{type="textfield", name="ugg_controls_textfield", text="0", numeric=true, allow_decimal=false, allow_negative=false, style="ugg_controls_textfield"}
-
-  local button_frame = content_frame.add{type="frame", name="button_frame", direction="horizontal", style="ugg_deep_frame"}
-  button_frame.add{type="table", name="button_table", column_count=#item_sprites, style="filter_slot_table"}
-
-  build_sprite_buttons(player)
-end
-
-commands.add_command("gui", "command-help.gui", function(command)
-  local player = game.get_player(command.player_index)
-  create_gui(player)
-end)
-
-
-
-
-
-
-script.on_event(defines.events.on_gui_click, function(event)
-  if event.element.name == "ugg_controls_toggle" then
-    local player_global = global.players[event.player_index]
-    player_global.controls_active = not player_global.controls_active
-
-    local control_toggle = event.element
-    control_toggle.caption = (player_global.controls_active) and "deactivate" or "activate"
-
-    local player = game.get_player(event.player_index)
-    local controls_flow = player.gui.screen.ugg_main_frame.content_frame.controls_flow
-    controls_flow.ugg_controls_slider.enabled = player_global.controls_active
-    controls_flow.ugg_controls_textfield.enabled = player_global.controls_active
-
-  elseif event.element.tags.action == "ugg_select_button" then
-    local player = game.get_player(event.player_index)
-    local player_global = global.players[player.index]
-
-    local clicked_item_name = event.element.tags.item_name
-    player_global.selected_item = clicked_item_name
-
-    build_sprite_buttons(player)
   end
-end)
 
-script.on_event(defines.events.on_gui_value_changed, function(event)
-    if event.element.name == "ugg_controls_slider" then
-        local player = game.get_player(event.player_index)
-        local player_global = global.players[player.index]
+  -- Handles closing the gui (checks if ours is open)
+  function GUI.on_closed(event)
+    local element = event.element
+    if not element then return end
 
-        local new_button_count = event.element.slider_value
-        player_global.button_count = new_button_count
+    if element.name == selector_window_name and element.visible then
+      local player = game.players[event.player_index]
 
-        local controls_flow = player.gui.screen.ugg_main_frame.content_frame.controls_flow
-        controls_flow.ugg_controls_textfield.text = tostring(new_button_count)
-
-        build_sprite_buttons(player)
+      GUI.toggle_window(player)
     end
-end)
+  end
 
-script.on_event(defines.events.on_gui_text_changed, function(event)
-    if event.element.name == "ugg_controls_textfield" then
-        local player = game.get_player(event.player_index)
-        local player_global = global.players[player.index]
+  -- Update the GUI when other mods swap the character (namely Jetpack)
+  function GUI.on_character_swapped(event)
+    local player = event.new_character.player
 
-        local new_button_count = tonumber(event.element.text) or 0
-        local capped_button_count = math.min(new_button_count, #item_sprites)
-        player_global.button_count = capped_button_count
+    if player and player.valid then
 
-        local controls_flow = player.gui.screen.ugg_main_frame.content_frame.controls_flow
-        controls_flow.ugg_controls_slider.slider_value = capped_button_count
+      -- reset our GUI as being opened, fixes Jetpack not saving that field
+      local selector_window = player.gui.screen[selector_window_name]
+      if selector_window and selector_window.visible then player.opened = selector_window end
 
-        build_sprite_buttons(player)
+      -- Update the currently open skins_table
+      local skins_table = global.open_skins_table[player.index]
+      if skins_table and skins_table.valid then
+        GUI.update_skins_table(skins_table.parent, player)
+      end
     end
-end)
 
-]]
+  end
+
+  return GUI
+end

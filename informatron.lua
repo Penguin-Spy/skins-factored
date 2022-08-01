@@ -13,45 +13,25 @@ return function(GUI)
   function Informatron.page_content(data) -- creates informatron pages
     -- main page
     if data.page_name == "skins-factored" then
+      local player = game.players[data.player_index]
       local element = data.element
       local available_skins_text = {"", {"skins-factored.available-skins"}}
 
-      for _,skin in pairs(util.split(settings.global["skins-factored-all-skins"].value, ";")) do
-        skin = (skin == "engineer" and "character") or ("character-" .. skin)
-        table.insert(available_skins_text, {"skins-factored.available-skins-item", {"entity-name."..skin}})
-      end
+      element.add{type="label", name="text_1", caption={"skins-factored.about"}}
+      element.add{type="label", name="text_2", caption={"skins-factored.informatron_instructions"}}
 
-      element.add{type="label", name="text_1", caption={"skins-factored.page_about"}}
-      element.add{type="label", name="text_2", caption=available_skins_text}
+      local picker_flow = element.add{type="flow"}
+      picker_flow.style.horizontal_align = "center"
+      picker_flow.style.horizontally_stretchable = true
+
+      local picker_frame = picker_flow.add{type="frame", style="blueprint_header_frame", direction="vertical", name="picker_frame"}
+      picker_frame.style.width = 824
+      picker_frame.style.horizontally_stretchable = false
+      --skin_picker.style.horizontally_stretchable = true
+      GUI.attach_skins_table(picker_frame, player)
+      GUI.update_skins_table(picker_frame, player)
     end
   end
 
   return Informatron
 end
-
---[[
--- Remote interface. replace "example" with your mod name
-remote.add_interface("skins-factored", {
-  informatron_menu = function(data)
-    return {}
-  end,
-  informatron_page_content = function(data)
-    return page_content(data.page_name, data.player_index, data.element)
-  end
-})
-
-function page_content(page_name, player_index, element)
-  -- main page
-  if page_name == "skins-factored" then
-    local available_skins_text = {"", {"skins-factored.available-skins"}}
-
-    for _,skin in pairs(util.split(settings.global["skins-factored-all-skins"].value, ";")) do
-      skin = (skin == "engineer" and "character") or ("character-" .. skin)
-      table.insert(available_skins_text, {"skins-factored.available-skins-item", {"entity-name."..skin}})
-    end
-
-    element.add{type="label", name="text_1", caption={"skins-factored.page_about"}}
-    element.add{type="label", name="text_2", caption=available_skins_text}
-  end
-end
-]]
