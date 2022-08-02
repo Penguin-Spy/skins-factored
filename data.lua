@@ -22,6 +22,9 @@ skins_factored = {
   registered_skins = {}
 }
 
+
+-- [[ Internal data stuff ]]
+
 data:extend({
   {
     type = "custom-input",
@@ -92,18 +95,11 @@ styles["skins_factored_skin_button"] = {
   size = skin_button_size,
   horizontal_align = "center",
   vertical_align = "center",
-  font_color = {1,1,1},
-  top_padding = 8
-}
-
-styles["skins_factored_skin_button_selected"] = {
-  type = "button_style",
-  parent = "green_button",
-  size = skin_button_size,
-  horizontal_align = "center",
-  vertical_align = "center",
   top_padding = 8,
-  left_click_sound = {{ filename = "__core__/sound/gui-click.ogg", volume = 1 }}
+  disabled_graphical_set = {  -- When the button is disabled, it's selected; render it as green.
+    base = {position = {68, 17}, corner_size = 8},
+    shadow = default_dirt
+  }
 }
 
 styles["skins_factored_skin_label"] = {
@@ -113,7 +109,8 @@ styles["skins_factored_skin_label"] = {
   top_padding = skin_preview_size[2] + 4, -- preview height + 4 top_margin
   horizontal_align = "center",
   vertical_align = "center",
-  font = "heading-2"
+  font = "default-dialog-button",
+  font_color = {28, 28, 28}
 }
 
 styles["skins_factored_skin_button_inner_frame"] = {

@@ -4,7 +4,7 @@ local swap_character = require 'swap-character'
 local PreviewSurface = require 'preview_surface'
 local GUI = require('gui')(PreviewSurface)
 
-remote_interface = {}
+local remote_interface = {}
 
 remote_interface.on_character_swapped = GUI.on_character_swapped
 
@@ -18,6 +18,7 @@ end
 
 remote.add_interface("skins-factored", remote_interface)
 
+available_skins = util.split(settings.startup["skins-factored-all-skins"].value, ";")
 
 -- [[ Local functions ]]
 
@@ -33,7 +34,7 @@ local function prototype_to_skin(prototype)
     or string.sub(prototype, 11)  -- cut off "character-" prefix
 end
 
-local function is_skin_available(skin, available_skins)
+local function is_skin_available(skin)
   for _, available_skin in ipairs(available_skins) do
     if skin == available_skin then
       return available_skin
@@ -52,7 +53,6 @@ end
 
 -- Safety checks used in multiple places
 function try_swap(player, skin, ignore_already)
-  local available_skins = util.split(settings.global["skins-factored-all-skins"].value, ";")
   local character = player.character or player.cutscene_character
 
   -- Check if the player has a character (can't swap if in god-controller or spectator mode)
@@ -70,7 +70,7 @@ function try_swap(player, skin, ignore_already)
   -- Check if the player is currently using a registered skin's character.
   -- Prevents swapping while at jetpack height or otherwise controlling a character from a different mod.
   local current_prototype_name = prototype_to_skin(character.name)
-  if not is_skin_available(current_prototype_name, available_skins) then
+  if not is_skin_available(current_prototype_name) then
     if string.sub(character.name, -8) == "-jetpack" then
       player.print{"command-output.character-using-jetpack"}
     else
@@ -98,12 +98,11 @@ end
 -- Add the character swap command
 commands.add_command("character", "command-help.character", function(command)
   local player = game.get_player(command.player_index)
-  local available_skins = util.split(settings.global["skins-factored-all-skins"].value, ";")
 
   -- Confirm the command is valid and safe to run
   if command.parameter then
     -- Check if the skin that the player requested exists
-    local skin = is_skin_available(command.parameter, available_skins)
+    local skin = is_skin_available(command.parameter)
     if not skin then
       player.print{"command-output.character-invalid-skin", command.parameter}
       return
@@ -140,13 +139,12 @@ script.on_event(defines.events.on_tick, function()
 end)
 
 -- If the player changed their setting & the command didn't, try to swap the player's character
--- Can fail for all the reasons the command can, we can't reset the setting because we don't know
---   what it was before.
 script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
   if not (event.setting == "skins-factored-selected-skin") then return end
 
   local player = game.get_player(event.player_index)
-  local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
+  local setting = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"]
+  local skin = setting.value
 
   if not global.changed_setting[event.player_index] then
     log("Player " .. player.name .. " changed setting, setting skin to " .. skin)
@@ -157,7 +155,7 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
     else
       -- Skin swap failed, we need to reset the player's setting to their current skin
       global.changed_setting[event.player_index] = true
-      settings.get_player_settings(event.player_index)["skins-factored-selected-skin"] = {value = global.active_skin[event.player_index]}
+      setting = {value = global.active_skin[event.player_index]}
     end
 
   else  -- the event was triggered by the command
@@ -247,6 +245,8 @@ end
 
 -- Ensures players have GUI & PreviewSurface properly set up
 local function initalize_player(player)
+  log("Initalizing player "..player.name.."["..player.index.."]")
+
   PreviewSurface.initalize_player(player)
 
   -- if Informatron isn't present, add our own button for the GUI
@@ -256,7 +256,8 @@ local function initalize_player(player)
     GUI.remove_button(player)
   end
 
-  -- if the player doesn't have an active skin, assume it's the engineer (this only happens when adding the mod to a preexisting save)
+  -- If the player doesn't have an active skin, assume it's the engineer (this only happens when adding the mod to a preexisting save)
+  --  if the player does have a chosen skin in the settings, it will be applied later (in swap_on_player_created)
   if not global.active_skin[player.index] then
     global.active_skin[player.index] = "engineer"
   end
@@ -264,6 +265,7 @@ end
 
 -- Runs once on new save, as well as when configuration changes. ensures All The Things are set up, including all players
 local function initalize()
+  log("Initalizing global data")
   -- All are tables indexed by player_index
   global.active_skin = global.active_skin or {}               -- permanent list of what this player's current skin is. may be not present for a player if they haven't changed skins yet
 
@@ -298,11 +300,25 @@ end)
 script.on_configuration_changed(initalize) -- When loaded mods change, update GUI & PreviewSurface
 
 
--- Runs when a player joins a save for the first time, only runs once
+-- Runs when a player joins a save for the first time, only runs once (or again if they were removed, see below)
 script.on_event(defines.events.on_player_created, function(event)
   local player = game.get_player(event.player_index)
 
   initalize_player(player)
 
   swap_on_player_created(player)
+end)
+
+-- Runs when a player is removed from a save. Only occurs in multiplayer, and is very uncommon. This code will probably never run outside of me testing it. Still important tho!
+script.on_event(defines.events.on_player_removed, function(event)
+  log("Removing player [" .. player_index .. "]")
+
+  PreviewSurface.remove_player(event.player_index)
+
+  -- Delete all of this players' data in the global tables
+  for _, table in pairs(global) do
+    if type(value) == "table" then
+      table[event.player_index] = nil
+    end
+  end
 end)

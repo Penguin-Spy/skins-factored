@@ -8,10 +8,11 @@ local function tags(table)
   return table
 end
 
+local selector_open_name = "skins_factored_selector_open"
+local selector_window_name = "skins_factored_selector_window"
+
 return function(PreviewSurface)
   local GUI = {}
-  local selector_open_name = "skins_factored_selector_open"
-  local selector_window_name = "skins_factored_selector_window"
 
   -- Creates (if not present) the inner frame containing just the skin selector buttons
   function GUI.attach_skins_table(parent, player)
@@ -20,7 +21,6 @@ return function(PreviewSurface)
       local skins_table = parent.add{type="table", column_count=5, style="skins_factored_skins_table", name="skins_table"}
       global.open_skins_table[player.index] = skins_table
 
-      local available_skins = util.split(settings.global["skins-factored-all-skins"].value, ";")
       for _, skin in pairs(available_skins) do
         local skin_preview_entity = PreviewSurface.get_skin_preview(skin, player)
 
@@ -74,20 +74,14 @@ return function(PreviewSurface)
     global.open_skins_table[player.index] = skins_table
 
     for _, skin_button in pairs(skins_table.children) do
-      if skin_button.tags.skin == global.active_skin[player.index] then
-        --if skin_button.enabled then -- if it was enabled, it was displaying the preview
-          skin_button.entity_frame.entity_camera.entity = player.character
-        --end
-        skin_button.enabled = false
-      else
-        --if not skin_button.enabled then -- if it wasn't enabled, it was displaying the player
-          skin_button.entity_frame.entity_camera.entity = PreviewSurface.get_skin_preview(skin_button.tags.skin, player)
-        --end
-        skin_button.enabled = true
-      end
-      --skin_button.style = skin_button.tags.skin == global.active_skin[player.index] and "skins_factored_skin_button_selected" or "skins_factored_skin_button"
+      local is_active_skin = skin_button.tags.skin == global.active_skin[player.index]
+      skin_button.enabled = not is_active_skin
 
-      --
+      if is_active_skin and settings.get_player_settings(player)["skins-factored-render-character"].value then
+        skin_button.entity_frame.entity_camera.entity = player.character
+      else
+        skin_button.entity_frame.entity_camera.entity = PreviewSurface.get_skin_preview(skin_button.tags.skin, player)
+      end
     end
   end
 
