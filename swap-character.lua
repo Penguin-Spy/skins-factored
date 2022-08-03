@@ -1,5 +1,6 @@
 --[[ swap-character.lua © Penguin_Spy 2022
   Provides a utility function to swap which prototype a character is using
+  You may use this file in your own mods, provided that your mod is not replacing the functionality of Skins Factored and you adhere to the  GPL-3.0 license terms.
 ]]
 
 -- https://lua-api.factorio.com/latest/LuaInventory.html
@@ -18,10 +19,14 @@ local function move_entity_inventory(from_entity, to_entity, inventory)
   end
 end
 
--- https://lua-api.factorio.com/latest/LuaControl.html
+--[[ Swap the prototype of the character a player is using
+  old_character (LuaEntity) = the player's current character entity
+  new_prototype_name (string) = the prototype name of the new character entity to be created
+  player (LuaPlayer) = optional, if not specified the player's control will not be passed to the new character (useful for cutscenes)
+]]
 local function swap_character(old_character, new_prototype_name, player)
-  --local player = old_character.player -- may be nil if we're swapping a character in a cutscene
 
+  -- (in)sanity checks
   if not old_character.valid then
     log("Character swap failed; old_character is invalid")
     return false

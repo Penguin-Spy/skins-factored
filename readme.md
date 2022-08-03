@@ -27,60 +27,38 @@ Then, add the following lines to your `data.lua`:
 skins_factored.registered_skins["your-skin-id-here"] = {
   icon       = "path/to/image.png", -- shown on the inventory button and in the gui, REQUIRED
   reflection = "path/to/image.png", -- reflection for water, OPTIONAL, will default to the default player's texture
-  animations = {  -- table of CharacterArmorAnimation, REQUIRED
-    {
-      idle = { -- RotatedAnimation
-        layers = {
-          { -- an Animation
-            filename = "path/to/image.png",
-            etc...
-          },
-          {
-            etc...
-          }
-        }
-      },
-      idle_with_gun = RotatedAnimation,
-      running = RotatedAnimation,
-      running_with_gun = RotatedAnimation,
-      mining_with_tool = RotatedAnimation,
-      armors = {"light-armor", "another-armor-id"}  -- Don't define this if you want these animations to be used for the player without armor.
-    },
-    {
-      etc...
-    }
-  },
-  corpse_animations = {} -- table of AnimationVariations, OPTIONAL
-                         -- if not present the default character corpse entity is used (no custom corpse is generated)
+  animations = {},        -- table of CharacterArmorAnimation, REQUIRED
+                          -- see below for what this should look like
+  corpse_animations = {}  -- table of AnimationVariations, OPTIONAL
+                          -- if not present the default character corpse entity is used (no custom corpse is generated)
 }
 ```
 The `animations` key is identical to what you would overwrite the default `character.animations` table with. The `corpse_animations` key is identical to what you would overwrite the default `character-corpse.pictures` table with.  
 The number of animations and what armors they apply to must match between `animations` and `corpse_animations`.  
-Of course, your code doesn't need to look exactly like the above example, it just needs to add a table with the required fields to the registered skins table: `skins_factored.registered_skins["your-skin-id-here"]`.
+For an example of what the `animations` key should look like, see [here](https://gist.github.com/Penguin-Spy/ab9c81511791bb90243d3e8bec2dcbd5).  
 
 Factorio wiki documentation for types:  
-- [Animation](https://wiki.factorio.com/Types/Animation)
-- [RotatedAnimation](https://wiki.factorio.com/Types/RotatedAnimation)
 - [AnimationVariations](https://wiki.factorio.com/Types/AnimationVariations)
 - [CharacterArmorAnimation](https://wiki.factorio.com/Types/CharacterArmorAnimation)
+- [RotatedAnimation](https://wiki.factorio.com/Types/RotatedAnimation)
 
 
 ### Localization
 Create a [localization file](https://wiki.factorio.com/Tutorial:Localisation) with the following contents: 
 ```ini
 [entity-name]
-character-SKIN_ID=Name for the skins in-game character
+character-SKIN_ID=Name for the skins in-game character, shown in the skin selector GUI
 character-SKIN_ID-corpse=Name for the skins in-game corpse
 
 [entity-description]
-character-SKIN_ID=Description for the skins in-game character
+character-SKIN_ID=Description for the skins in-game character, shown in the skin selector GUI
 character-SKIN_ID-corpse=Description for the skins in-game corpse
 
 [string-mod-setting]
-skins-factored-selected-skin-SKIN_ID=Name for the skins setting dropdown item
+skins-factored-selected-skin-SKIN_ID=Name for the skins setting dropdown item (required, but should be the same as the entity-name)
 
 [string-mod-setting-description]
-skins-factored-selected-skin-SKIN_ID=Description for the skins setting dropdown item
+skins-factored-selected-skin-SKIN_ID=Description for the skins setting dropdown item (required, but should be the same as the entity-description)
 ```
 
 ### Dependency
@@ -91,7 +69,7 @@ Finally, add the following to your mod's `info.json`:
   ],
 ```
 If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. Don't forget to check if the `skins_factored` table exists before writing to it! This library is *technically* compatable with other character selector mods, but it's kinda jank; players have to choose the default character (usually the engineer) before changing to a !skins character. I intend to improve this in the future.  
-If you are creating a new skin mod and are using this library, *please* use a hard dependency, and **do not** try to overwrite the default `character` if this mod isn't found, that will simply create the plentiful bundle of issues that this library was written to avoid.
+If you are creating a new skin mod and are using this library, *please* use a hard dependency, and **do not** try to overwrite the default `character` if this mod isn't found!! That will simply create the plentiful bundle of issues that this library was written to avoid.
 
 # Legal stuff
 Copyright (C) 2022  Penguin_Spy  

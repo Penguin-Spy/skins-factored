@@ -1,4 +1,22 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.0
+Date: 2.8.2022
+  Features:
+    - Added skin selector GUI, with live previews of all available skins and the player's current character.
+    - The skin selector GUI is embedded in the Informatron page.
+    - Added better instructions to both menus.
+    - Added mod-gui button, keybind, & quickbar shortcut to open the GUI.
+    - Added an option to disable the GUI's camera view of the current character (useful in multiplayer because of latency).
+    - Improved initalization and cleanup of player data (active skin, etc.). This prevents potential crashes or desyncs in multiplayer.
+  Bugfixes:
+    - Fixed the /character command help not displaying.
+    - Fixed an issue with trying to swap characters during the intro cutscene (it shouldn't be possible, but was in specific situations).
+    - Moved a safety check to prevent swapping to the current character.
+    - Fixed an issue with resetting the setting value when swapping characters failed.
+  Compatibility:
+    - Better handling of cases where the player is controlling a character from a different mod.
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.7
 Date: 28.7.2022
   Features:

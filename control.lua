@@ -53,7 +53,7 @@ end
 
 -- Safety checks used in multiple places
 function try_swap(player, skin, ignore_already)
-  local character = player.character or player.cutscene_character
+  local character = player.character  -- can't also check player.cutscene_character; we can't reliably tell the cutscene to use the new character
 
   -- Check if the player has a character (can't swap if in god-controller or spectator mode)
   if not character then
@@ -96,7 +96,7 @@ end
 -- [[ Scripting ]]
 
 -- Add the character swap command
-commands.add_command("character", "command-help.character", function(command)
+commands.add_command("character", {"command-help.character"}, function(command)
   local player = game.get_player(command.player_index)
 
   -- Confirm the command is valid and safe to run
@@ -143,8 +143,7 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
   if not (event.setting == "skins-factored-selected-skin") then return end
 
   local player = game.get_player(event.player_index)
-  local setting = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"]
-  local skin = setting.value
+  local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
 
   if not global.changed_setting[event.player_index] then
     log("Player " .. player.name .. " changed setting, setting skin to " .. skin)
@@ -155,7 +154,8 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
     else
       -- Skin swap failed, we need to reset the player's setting to their current skin
       global.changed_setting[event.player_index] = true
-      setting = {value = global.active_skin[event.player_index]}
+      -- this must be a call to get_player_settings, storing the result as a variable & writing to it later doesn't work.
+      settings.get_player_settings(event.player_index)["skins-factored-selected-skin"] = {value = global.active_skin[event.player_index]}
     end
 
   else  -- the event was triggered by the command
@@ -233,10 +233,7 @@ local function swap_on_player_created(player)
 
     -- Regardless of controller, update our tracking of which skin the player is currently using
     update_active_skin(player, skin)
-
-  else  -- swapping failed, set skin to current character
-    update_active_skin(player, prototype_to_skin(old_character.name))
-  end
+  end -- if swapping failed, leave the players active_skin as "engineer"; the character could be any prototype, not just one of our skins
 
 end
 

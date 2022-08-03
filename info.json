@@ -1,8 +1,8 @@
 {
   "name": "skins-factored",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "title": "!skins (Skins Factored)",
-  "description": "Library mod that makes it easy for other mods to add custom characters (skins), with a character picker.\nWritten to be compatible with almost all mods that edit the default character prototype.\nExplicitly compatible with Jetpacks & Space Exploration",
+  "description": "Library mod that makes it easy for other mods to add custom characters (skins), with a character picker.\nWritten to be compatible with almost all mods that edit the default character prototype.\nExplicitly compatible with Jetpack, Space Exploration, and RPG System",
   "author": "Penguin_Spy",
   "factorio_version": "1.1",
   "dependencies": [
