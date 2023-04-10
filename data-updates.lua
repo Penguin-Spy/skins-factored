@@ -29,7 +29,7 @@ function get_missing_armors(armors)
 end
 
 
-for skin_id, skin in pairs(skins_factored.registered_skins) do
+for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
 
   --[[ Create character prototype ]]
   log("Creating skin " .. skin_id)

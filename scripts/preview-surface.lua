@@ -1,3 +1,5 @@
+local Common = require 'Common'
+
 local PreviewSurface = {}
 
 function PreviewSurface.initalize()
@@ -23,7 +25,7 @@ function PreviewSurface.initalize()
   data.skin_positions = data.skin_positions or {}
   data.next_skin_pos = data.next_skin_pos or 1
 
-  for _, skin in pairs(available_skins) do
+  for _, skin in pairs(Common.available_skins) do
     if not data.skin_positions[skin] then
       local n = data.next_skin_pos
       data.skin_positions[skin] = n
@@ -64,7 +66,7 @@ function PreviewSurface.get_skin_preview(skin, player)
   if not (skin_preview and skin_preview.valid) then
     log("Creating skin preview of " .. skin .. " for " .. player.name .. " [" .. player.index .. "]")
     skin_preview = data.surface.create_entity{
-      name = skin_to_prototype(skin),
+      name = Common.skin_to_prototype(skin),
       position = {data.skin_positions[skin] * 4, player.index * 4},
       force = player.force,
       direction = defines.direction.south

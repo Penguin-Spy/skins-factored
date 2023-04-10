@@ -1,8 +1,9 @@
 --[[ control.lua © Penguin_Spy 2022 ]]
-local util = require 'util'
-local swap_character = require 'swap-character'
-local PreviewSurface = require 'preview_surface'
-local GUI = require('gui')(PreviewSurface)
+util = require 'util'
+swap_character = require 'scripts.swap-character'
+PreviewSurface = require 'scripts.preview-surface'
+GUI = require('scripts.gui')(PreviewSurface)
+Common = require 'Common'
 
 local remote_interface = {}
 
@@ -11,36 +12,16 @@ remote_interface.on_character_swapped = GUI.on_character_swapped
 -- Register Informatron pages
 --  this conditional require is safe because if one player has the mod, all must have it and so our checksum will still match.
 if script.active_mods["informatron"] then
-  local Informatron = require('informatron')(GUI)
+  local Informatron = require('scripts.informatron')(GUI)
   remote_interface.informatron_menu = Informatron.menu
   remote_interface.informatron_page_content = Informatron.page_content
 end
 
 remote.add_interface("skins-factored", remote_interface)
 
-available_skins = util.split(settings.startup["skins-factored-all-skins"].value, ";")
+if script.active_mods["gvv"] then require("__gvv__.gvv")() end
 
 -- [[ Local functions ]]
-
--- The end user sees "engineer", but internally it is called just "character", not "character-engineer"
-function skin_to_prototype(skin)
-  return (skin == "engineer" and "character") or ("character-" .. skin)
-end
-local function prototype_to_skin(prototype)
-  return (
-    (prototype == "character"     -- vanilla character name
-    or prototype == "engineer")   -- "compatability" with Eradicator's Character Additions, will allow players to swap by going back to the engineer first
-      and "engineer")
-    or string.sub(prototype, 11)  -- cut off "character-" prefix
-end
-
-local function is_skin_available(skin)
-  for _, available_skin in ipairs(available_skins) do
-    if skin == available_skin then
-      return available_skin
-    end
-  end
-end
 
 -- Update our tracking of which skin the player is currently using
 local function update_active_skin(player, skin)
@@ -63,14 +44,14 @@ function try_swap(player, skin, ignore_already)
 
   -- Check if the player is already using the requested skin
   if (not ignore_already) and (skin == global.active_skin[player.index]) then
-    player.print{"command-output.character-already-skin", {"entity-name."..skin_to_prototype(skin)}}
+    player.print{"command-output.character-already-skin", {"entity-name."..Common.skin_to_prototype(skin)}}
     return
   end
 
   -- Check if the player is currently using a registered skin's character.
   -- Prevents swapping while at jetpack height or otherwise controlling a character from a different mod.
-  local current_prototype_name = prototype_to_skin(character.name)
-  if not is_skin_available(current_prototype_name) then
+  local current_prototype_name = Common.prototype_to_skin(character.name)
+  if not Common.is_skin_available(current_prototype_name) then
     if string.sub(character.name, -8) == "-jetpack" then
       player.print{"command-output.character-using-jetpack"}
     else
@@ -80,7 +61,7 @@ function try_swap(player, skin, ignore_already)
   end
 
   --[[ Safe to swap ]]
-  local new_prototype_name = skin_to_prototype(skin)
+  local new_prototype_name = Common.skin_to_prototype(skin)
 
   -- Finally attempt to swap, only updating the setting if it was successful.
   if swap_character(character, new_prototype_name, player) then
@@ -101,9 +82,9 @@ commands.add_command("character", {"command-help.character"}, function(command)
 
   -- Confirm the command is valid and safe to run
   if command.parameter then
+    local skin = command.parameter
     -- Check if the skin that the player requested exists
-    local skin = is_skin_available(command.parameter)
-    if not skin then
+    if not Common.is_skin_available(command.parameter) then
       player.print{"command-output.character-invalid-skin", command.parameter}
       return
     end
@@ -117,7 +98,7 @@ commands.add_command("character", {"command-help.character"}, function(command)
 
   -- No parameter passed, list all skins
   else
-    player.print{"command-output.character-available-skins", table.concat(available_skins, "\n  ")}
+    player.print{"command-output.character-available-skins", table.concat(Common.available_skins, "\n  ")}
   end
 end)
 
@@ -219,7 +200,7 @@ local function swap_on_player_created(player)
   if not old_character then return end  -- abort if ran in a scenario without a character
 
   -- Don't swap if we're already the skin we want to be (usually engineer)
-  local new_prototype_name = skin_to_prototype(skin)
+  local new_prototype_name = Common.skin_to_prototype(skin)
   if new_prototype_name == old_character.name then return end
 
   log("Player " .. player.name .. " created, setting skin to " .. skin)
@@ -245,6 +226,7 @@ local function initalize_player(player)
   log("Initalizing player "..player.name.."["..player.index.."]")
 
   PreviewSurface.initalize_player(player)
+  GUI.initalize_player(player)
 
   -- if Informatron isn't present, add our own button for the GUI
   if not script.active_mods["informatron"] then
