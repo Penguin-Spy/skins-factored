@@ -1,4 +1,4 @@
---[[ settings-updates.lua © Penguin_Spy 2022
+--[[ settings-updates.lua © Penguin_Spy 2023
   Creates the skin dropdown menu for players to choose their skin
 ]]
 local skin_ids = skins_factored_INTERNAL.registered_skin_ids

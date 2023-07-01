@@ -1,4 +1,4 @@
---[[ gui.lua © Penguin_Spy 2022
+--[[ gui.lua © Penguin_Spy 2023
   Returns a table containing functions used to create and interact with the skin picker GUI
 ]]
 local mod_gui = require 'mod-gui'

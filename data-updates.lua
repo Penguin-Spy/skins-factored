@@ -1,8 +1,10 @@
---[[ data-updates.lua © Penguin_Spy 2022
+--[[ data-updates.lua © Penguin_Spy 2023
   Use the registered skins to create prototypes for them
   During data-final-fixes mods may use these prototypes for their own purposes
   (such as `mods.factorio.com/mod/jetpack` duplicating them for the flying character prototypes)
 ]]
+-- the Lua Language Server (sumneko.lua) isn't aware of table.deepcopy()
+---@diagnostic disable: undefined-field
 
 local util = require "util"
 
@@ -16,7 +18,7 @@ for _,animation in ipairs(orig_char.animations) do
   end
 end
 
-function get_missing_armors(armors)
+local function get_missing_armors(armors)
   local missing_armors = table.deepcopy(all_armors)
   for _,animation in ipairs(armors) do
     if animation.armors then

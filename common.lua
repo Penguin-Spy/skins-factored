@@ -3,8 +3,6 @@
 ]]
 local util = require 'util'
 
-log("running common.lua")
-
 -- cannot be ran during the settings phase (which is fine, we don't need this then)
 local available_skins = util.split(settings.startup["skins-factored-all-skins"].value, ";")
 local Common = {

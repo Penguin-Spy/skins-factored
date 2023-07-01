@@ -1,6 +1,6 @@
---[[ swap-character.lua © Penguin_Spy 2022
+--[[ swap-character.lua © Penguin_Spy 2023
   Provides a utility function to swap which prototype a character is using
-  You may use this file in your own mods, provided that your mod is not replacing the functionality of Skins Factored and you adhere to the  GPL-3.0 license terms.
+  You may use this file in your own mods, provided that your mod is not replacing the functionality of Skins Factored and you adhere to the GPL-3.0 license terms.
 ]]
 
 -- https://lua-api.factorio.com/latest/LuaInventory.html
