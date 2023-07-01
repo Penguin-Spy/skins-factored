@@ -17,24 +17,24 @@ Before modifying the tables in both phases, you should first check that `skins_f
 ### `settings.lua`
 First, add the following line to your `settings.lua`:
 ```lua
-table.insert(skins_factored.registered_skin_ids, "your-skin-id-here")
+skins_factored.register_skin_id("your-skin-id-here")
 ```
 Skin IDs must be a [valid prototype name](https://wiki.factorio.com/PrototypeBase#name "PrototypeBase - Factorio Wiki"). This is what players will see when using the `/character` command. Localization files are used for all other skin changing interfaces.
 
 ### `data.lua`
 Then, add the following lines to your `data.lua`:
 ```lua
-skins_factored.registered_skins["your-skin-id-here"] = {
+skins_factored.create_skin("your-skin-id-here", {
   icon       = "path/to/image.png", -- shown on the inventory button and in the gui, REQUIRED
   reflection = "path/to/image.png", -- reflection for water, OPTIONAL, will default to the default player's texture
   animations = {},        -- table of CharacterArmorAnimation, REQUIRED
                           -- see below for what this should look like
   corpse_animations = {}  -- table of AnimationVariations, OPTIONAL
                           -- if not present the default character corpse entity is used (no custom corpse is generated)
-}
+})
 ```
 The `animations` key is identical to what you would overwrite the default `character.animations` table with. The `corpse_animations` key is identical to what you would overwrite the default `character-corpse.pictures` table with.  
-The number of animations and what armors they apply to must match between `animations` and `corpse_animations`.  
+The number of animations and what armors they apply to must match between `animations` and `corpse_animations`. The `animations[n].armors` table is used to merge armor tiers in case your mod does not have all 3 armor tiers (or more if other mods add more tiers).  
 For an example of what the `animations` key should look like, see [here](https://gist.github.com/Penguin-Spy/ab9c81511791bb90243d3e8bec2dcbd5).  
 
 Factorio wiki documentation for types:  
@@ -60,17 +60,19 @@ skins-factored-selected-skin-SKIN_ID=Name for the skins setting dropdown item (r
 [string-mod-setting-description]
 skins-factored-selected-skin-SKIN_ID=Description for the skins setting dropdown item (required, but should be the same as the entity-description)
 ```
+Make sure to replace the word `SKIN_ID` in the key with the same skin ID you passed to `skins_factored.register_skin_id()`.  
+
 
 ### Dependency
 Finally, add the following to your mod's `info.json`:
 ```json
   "dependencies": [
-    "skins-factored >= 0.1.6"
+    "skins-factored >= 1.0.0"
   ],
 ```
 If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. Don't forget to check if the `skins_factored` table exists before writing to it! This library is *technically* compatable with other character selector mods, but it's kinda jank; players have to choose the default character (usually the engineer) before changing to a !skins character. I intend to improve this in the future.  
 If you are creating a new skin mod and are using this library, *please* use a hard dependency, and **do not** try to overwrite the default `character` if this mod isn't found!! That will simply create the plentiful bundle of issues that this library was written to avoid.
 
 # Legal stuff
-Copyright (C) 2022  Penguin_Spy  
+Copyright (C) 2023  Penguin_Spy  
 Licensed under GNU General Public License v3.0 or later. See `LICENSE` for the full text.  

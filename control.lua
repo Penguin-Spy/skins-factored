@@ -1,9 +1,8 @@
---[[ control.lua © Penguin_Spy 2022 ]]
-util = require 'util'
-swap_character = require 'scripts.swap-character'
-PreviewSurface = require 'scripts.preview-surface'
-GUI = require('scripts.gui')(PreviewSurface)
-Common = require 'Common'
+--[[ control.lua © Penguin_Spy 2023 ]]
+local swap_character = require 'scripts.swap-character'
+local PreviewSurface = require 'scripts.preview-surface'
+local GUI = require('scripts.gui')(PreviewSurface)
+local Common = require 'common'
 
 local remote_interface = {}
 
@@ -33,6 +32,8 @@ local function update_active_skin(player, skin)
 end
 
 -- Safety checks used in multiple places
+--- i'm too lazy to put this where it should go; it's global so that gui.lua can use it. whatever.
+---@diagnostic disable-next-line: lowercase-global
 function try_swap(player, skin, ignore_already)
   local character = player.character  -- can't also check player.cutscene_character; we can't reliably tell the cutscene to use the new character
 
@@ -110,7 +111,7 @@ script.on_event(defines.events.on_tick, function()
       if player.character
        and player.character.logistic_cell
        and player.character.logistic_cell.logistic_network then
-        for _, robot in pairs(global.orphaned_bots[player_index]) do
+        for _, robot in pairs(robots) do
           robot.logistic_network = player.character.logistic_cell.logistic_network
         end
         table.remove(global.orphaned_bots, player_index)
@@ -175,7 +176,6 @@ end
 -- When the starting cutscene ends (activates on all, logic only runs when ending the intro)
 script.on_event(defines.events.on_cutscene_cancelled, function (event)
   local player = game.get_player(event.player_index)
-  local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
 
   -- If the player doesn't have a character at the end of the cutscene, and we have a stored character for them to use
   --  then we must be at the end of the intro crash site cutscene
@@ -240,6 +240,13 @@ local function initalize_player(player)
   if not global.active_skin[player.index] then
     global.active_skin[player.index] = "engineer"
   end
+
+  -- If the player does have an active skin, but it's prototype no longer exists (mod adding it was removed),
+  --  warn the player to load with the mod active & change skins to prevent losing inventory (by the time we can run code, the entity has already been deleted)
+  local intended_prototype = Common.skin_to_prototype(global.active_skin[player.index])
+  if not game.entity_prototypes[intended_prototype] then
+    player.print{"skins-factored.error-skin-removed", player.name, global.active_skin[player.index]}
+  end
 end
 
 -- Runs once on new save, as well as when configuration changes. ensures All The Things are set up, including all players
@@ -290,14 +297,14 @@ end)
 
 -- Runs when a player is removed from a save. Only occurs in multiplayer, and is very uncommon. This code will probably never run outside of me testing it. Still important tho!
 script.on_event(defines.events.on_player_removed, function(event)
-  log("Removing player [" .. player_index .. "]")
+  log("Removing player [" .. event.player_index .. "]")
 
   PreviewSurface.remove_player(event.player_index)
 
   -- Delete all of this players' data in the global tables
-  for _, table in pairs(global) do
+  for _, value in pairs(global) do
     if type(value) == "table" then
-      table[event.player_index] = nil
+      value[event.player_index] = nil
     end
   end
 end)

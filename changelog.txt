@@ -1,20 +1,15 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.0.0
-Date: 9.4.2023
+Date: 30.6.2023
   Features:
-    - update in progress!!
-    - new method of registering skin ids and creating skins (use function instead of setting table key value)
-    - inc schema_version (now 2)
-    - better error protection and messages when invalid data is passed to the library
+    - New API! Uses a function instead of setting table values.
+    - Incremented the schema_version (now 2) to account for the above change.
+    - Better error protection and messages when invalid data is passed to the library.
+    - Added a warning when loading a save with a missing skin in use (player's inventory is unavoidably deleted).
   Bugfixes:
-    - re-set the all-skins smuggle setting on every game load
-    - move stuff to common.lua
-    - (in progress) fix GUI buttons not changing when skins are added/removed
-
-
-
-
-
+    - Reset the all-skins smuggle setting on every game load, now the mod will recognize skins that are added later in the game.
+    - Fixed the GUI buttons not changing when skins are added/removed.
+    - Moved some internal stuff to common.lua, and cleaned up some code.
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.0

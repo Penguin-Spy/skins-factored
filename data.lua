@@ -1,14 +1,16 @@
---[[ data.lua © Penguin_Spy 2022
+--[[ data.lua © Penguin_Spy 2023
   Creates the table for mods to add their skin data through
 ]]
 local Common = require 'Common'
 
 -- global
+---@diagnostic disable-next-line: lowercase-global
 skins_factored = {
   schema_version = 2,
 }
 
 -- do not touch!!
+---@diagnostic disable-next-line: lowercase-global
 skins_factored_INTERNAL = {
   registered_skins = {}
 }
@@ -17,15 +19,15 @@ skins_factored_INTERNAL = {
  -- "skin-id" is the identifier for the skin, used in programming context and localization, not shown to end user
 skins_factored.create_skin("skin-id", {
 
-  icon = "__base__/whatever/this/was/character.png",              -- shown on the inventory button and in the gui, REQUIRED
+  icon = "__base__/path/to/character.png",              -- shown on the inventory button and in the gui, REQUIRED
 
   water_reflection = "__base__/path/to/character-reflection.png", -- reflection thing for water, OPTIONAL, will default to the default player's texture
 
   armor_animation = {}, -- CharacterArmorAnimation, the character prototype's animations table, REQUIRED
-                        -- ignores the `armors` table, define the animations in the same order as the default character (3 teirs: armorless/light armor, heavy/modular armor, power armor)
+                        -- ignores the `armors` table, define the animations in the same order as the default character (3 teirs: armorless/light armor, heavy/modular armor, power armor/power armor mk2)
                         -- if only one tier is provided, it is used for all armor. if more than 3 are provided, the extras are only used if the default character has had more teirs added to it (by other mods)
 
-  corpse_animation = {} -- AnimationVariations, the character-corpse prototype's pictures table, OPTIONAL, will default to the vanilla engineer's corpse
+  corpse_animation = {} -- AnimationVariations, the character-corpse prototype's pictures table, OPTIONAL, will default to using the vanilla engineer's corpse
 })
 ]]
 function skins_factored.create_skin(skin_id, data)
@@ -33,16 +35,15 @@ function skins_factored.create_skin(skin_id, data)
     error("Unknown skin id: '" .. skin_id .. "', did you forget to register it in settings.lua?")
   end
 
-  if not skin.icon then
+  if not data.icon then
     error("Unable to create skin; 'icon' property is missing.")
-  elseif not skin.armor_animations then
+  elseif not data.armor_animations then
     error("Unable to create skin; 'armor_animations' property is missing.")
   end
-  
-  log("Registering skin creation: " .. skin_id .. " with data: " .. serpent.block(data))
+
+  log("Registering skin creation: " .. skin_id .. " with data: " .. serpent.block(data, { maxlevel = 1 }))
   skins_factored_INTERNAL.registered_skins[skin_id] = data
 end
-
 
 -- [[ Internal data stuff ]]
 
@@ -119,7 +120,6 @@ styles["skins_factored_skin_button"] = {
   top_padding = 8,
   disabled_graphical_set = {  -- When the button is disabled, it's selected; render it as green.
     base = {position = {68, 17}, corner_size = 8},
-    shadow = default_dirt
   }
 }
 
@@ -143,7 +143,6 @@ styles["skins_factored_skin_button_inner_frame"] = {
       tint = {0, 0, 0, 1},
       scale = 0.5
     },
-    shadow = default_shadow
   },
   size = skin_preview_size,
   padding = -4
