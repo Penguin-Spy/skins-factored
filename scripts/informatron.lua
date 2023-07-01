@@ -1,4 +1,4 @@
---[[ informatron.lua © Penguin_Spy 2022
+--[[ informatron.lua © Penguin_Spy 2023
   Informatron page implementation. https://mods.factorio.com/mod/informatron
 ]]
 

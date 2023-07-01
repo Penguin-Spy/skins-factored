@@ -1,8 +1,8 @@
---[[ control.lua © Penguin_Spy 2022 ]]
-local util = require 'util'
-local swap_character = require 'swap-character'
-local PreviewSurface = require 'preview_surface'
-local GUI = require('gui')(PreviewSurface)
+--[[ control.lua © Penguin_Spy 2023 ]]
+local swap_character = require 'scripts.swap-character'
+local PreviewSurface = require 'scripts.preview-surface'
+local GUI = require('scripts.gui')(PreviewSurface)
+local Common = require 'common'
 
 local remote_interface = {}
 
@@ -11,36 +11,16 @@ remote_interface.on_character_swapped = GUI.on_character_swapped
 -- Register Informatron pages
 --  this conditional require is safe because if one player has the mod, all must have it and so our checksum will still match.
 if script.active_mods["informatron"] then
-  local Informatron = require('informatron')(GUI)
+  local Informatron = require('scripts.informatron')(GUI)
   remote_interface.informatron_menu = Informatron.menu
   remote_interface.informatron_page_content = Informatron.page_content
 end
 
 remote.add_interface("skins-factored", remote_interface)
 
-available_skins = util.split(settings.startup["skins-factored-all-skins"].value, ";")
+if script.active_mods["gvv"] then require("__gvv__.gvv")() end
 
 -- [[ Local functions ]]
-
--- The end user sees "engineer", but internally it is called just "character", not "character-engineer"
-function skin_to_prototype(skin)
-  return (skin == "engineer" and "character") or ("character-" .. skin)
-end
-local function prototype_to_skin(prototype)
-  return (
-    (prototype == "character"     -- vanilla character name
-    or prototype == "engineer")   -- "compatability" with Eradicator's Character Additions, will allow players to swap by going back to the engineer first
-      and "engineer")
-    or string.sub(prototype, 11)  -- cut off "character-" prefix
-end
-
-local function is_skin_available(skin)
-  for _, available_skin in ipairs(available_skins) do
-    if skin == available_skin then
-      return available_skin
-    end
-  end
-end
 
 -- Update our tracking of which skin the player is currently using
 local function update_active_skin(player, skin)
@@ -52,6 +32,8 @@ local function update_active_skin(player, skin)
 end
 
 -- Safety checks used in multiple places
+--- i'm too lazy to put this where it should go; it's global so that gui.lua can use it. whatever.
+---@diagnostic disable-next-line: lowercase-global
 function try_swap(player, skin, ignore_already)
   local character = player.character  -- can't also check player.cutscene_character; we can't reliably tell the cutscene to use the new character
 
@@ -63,14 +45,14 @@ function try_swap(player, skin, ignore_already)
 
   -- Check if the player is already using the requested skin
   if (not ignore_already) and (skin == global.active_skin[player.index]) then
-    player.print{"command-output.character-already-skin", {"entity-name."..skin_to_prototype(skin)}}
+    player.print{"command-output.character-already-skin", {"entity-name."..Common.skin_to_prototype(skin)}}
     return
   end
 
   -- Check if the player is currently using a registered skin's character.
   -- Prevents swapping while at jetpack height or otherwise controlling a character from a different mod.
-  local current_prototype_name = prototype_to_skin(character.name)
-  if not is_skin_available(current_prototype_name) then
+  local current_prototype_name = Common.prototype_to_skin(character.name)
+  if not Common.is_skin_available(current_prototype_name) then
     if string.sub(character.name, -8) == "-jetpack" then
       player.print{"command-output.character-using-jetpack"}
     else
@@ -80,7 +62,7 @@ function try_swap(player, skin, ignore_already)
   end
 
   --[[ Safe to swap ]]
-  local new_prototype_name = skin_to_prototype(skin)
+  local new_prototype_name = Common.skin_to_prototype(skin)
 
   -- Finally attempt to swap, only updating the setting if it was successful.
   if swap_character(character, new_prototype_name, player) then
@@ -101,9 +83,9 @@ commands.add_command("character", {"command-help.character"}, function(command)
 
   -- Confirm the command is valid and safe to run
   if command.parameter then
+    local skin = command.parameter
     -- Check if the skin that the player requested exists
-    local skin = is_skin_available(command.parameter)
-    if not skin then
+    if not Common.is_skin_available(command.parameter) then
       player.print{"command-output.character-invalid-skin", command.parameter}
       return
     end
@@ -117,7 +99,7 @@ commands.add_command("character", {"command-help.character"}, function(command)
 
   -- No parameter passed, list all skins
   else
-    player.print{"command-output.character-available-skins", table.concat(available_skins, "\n  ")}
+    player.print{"command-output.character-available-skins", table.concat(Common.available_skins, "\n  ")}
   end
 end)
 
@@ -129,7 +111,7 @@ script.on_event(defines.events.on_tick, function()
       if player.character
        and player.character.logistic_cell
        and player.character.logistic_cell.logistic_network then
-        for _, robot in pairs(global.orphaned_bots[player_index]) do
+        for _, robot in pairs(robots) do
           robot.logistic_network = player.character.logistic_cell.logistic_network
         end
         table.remove(global.orphaned_bots, player_index)
@@ -194,7 +176,6 @@ end
 -- When the starting cutscene ends (activates on all, logic only runs when ending the intro)
 script.on_event(defines.events.on_cutscene_cancelled, function (event)
   local player = game.get_player(event.player_index)
-  local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
 
   -- If the player doesn't have a character at the end of the cutscene, and we have a stored character for them to use
   --  then we must be at the end of the intro crash site cutscene
@@ -219,7 +200,7 @@ local function swap_on_player_created(player)
   if not old_character then return end  -- abort if ran in a scenario without a character
 
   -- Don't swap if we're already the skin we want to be (usually engineer)
-  local new_prototype_name = skin_to_prototype(skin)
+  local new_prototype_name = Common.skin_to_prototype(skin)
   if new_prototype_name == old_character.name then return end
 
   log("Player " .. player.name .. " created, setting skin to " .. skin)
@@ -245,6 +226,7 @@ local function initalize_player(player)
   log("Initalizing player "..player.name.."["..player.index.."]")
 
   PreviewSurface.initalize_player(player)
+  GUI.initalize_player(player)
 
   -- if Informatron isn't present, add our own button for the GUI
   if not script.active_mods["informatron"] then
@@ -257,6 +239,13 @@ local function initalize_player(player)
   --  if the player does have a chosen skin in the settings, it will be applied later (in swap_on_player_created)
   if not global.active_skin[player.index] then
     global.active_skin[player.index] = "engineer"
+  end
+
+  -- If the player does have an active skin, but it's prototype no longer exists (mod adding it was removed),
+  --  warn the player to load with the mod active & change skins to prevent losing inventory (by the time we can run code, the entity has already been deleted)
+  local intended_prototype = Common.skin_to_prototype(global.active_skin[player.index])
+  if not game.entity_prototypes[intended_prototype] then
+    player.print{"skins-factored.error-skin-removed", player.name, global.active_skin[player.index]}
   end
 end
 
@@ -308,14 +297,14 @@ end)
 
 -- Runs when a player is removed from a save. Only occurs in multiplayer, and is very uncommon. This code will probably never run outside of me testing it. Still important tho!
 script.on_event(defines.events.on_player_removed, function(event)
-  log("Removing player [" .. player_index .. "]")
+  log("Removing player [" .. event.player_index .. "]")
 
   PreviewSurface.remove_player(event.player_index)
 
   -- Delete all of this players' data in the global tables
-  for _, table in pairs(global) do
+  for _, value in pairs(global) do
     if type(value) == "table" then
-      table[event.player_index] = nil
+      value[event.player_index] = nil
     end
   end
 end)
