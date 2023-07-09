@@ -6,13 +6,13 @@ This mod takes a different approach than other skin-changer mods: instead of try
 
 This library was written to be compatible with almost all mods that edit the default character prototype. It is explicitly compatible with [Jetpack](https://mods.factorio.com/mod/jetpack), [Space Exploration](https://mods.factorio.com/mod/space-exploration), and [RPG System](https://mods.factorio.com/mod/RPGsystem).
 
+
 # Usage
 This information is only for developers wanting to use this library! See the [mod portal](https://mods.factorio.com/mod/skins-factored) for information for players.
 
 Adding support for this mod is simple, and can be done without losing support for other character-selecting mods.  
 You can add multiple skins in one mod if you wish, just follow the steps for each skin you want to add, making sure to use a unique skin id for each.  
-Before modifying the tables in both phases, you should first check that `skins_factored.schema_version == 1` (the current version).
-
+Before modifying the tables in both phases, you should first check that `skins_factored.schema_version == 2` (the current version).
 
 ### `settings.lua`
 First, add the following line to your `settings.lua`:
@@ -35,13 +35,12 @@ skins_factored.create_skin("your-skin-id-here", {
 ```
 The `animations` key is identical to what you would overwrite the default `character.animations` table with. The `corpse_animations` key is identical to what you would overwrite the default `character-corpse.pictures` table with.  
 The number of animations and what armors they apply to must match between `animations` and `corpse_animations`. The `animations[n].armors` table is used to merge armor tiers in case your mod does not have all 3 armor tiers (or more if other mods add more tiers).  
-For an example of what the `animations` key should look like, see [here](https://gist.github.com/Penguin-Spy/ab9c81511791bb90243d3e8bec2dcbd5).  
+For an example of what the `animations` key should look like, see [here](https://gist.github.com/Penguin-Spy/ab9c81511791bb90243d3e8bec2dcbd5).
 
 Factorio wiki documentation for types:  
 - [AnimationVariations](https://wiki.factorio.com/Types/AnimationVariations)
 - [CharacterArmorAnimation](https://wiki.factorio.com/Types/CharacterArmorAnimation)
 - [RotatedAnimation](https://wiki.factorio.com/Types/RotatedAnimation)
-
 
 ### Localization
 Create a [localization file](https://wiki.factorio.com/Tutorial:Localisation) with the following contents: 
@@ -62,7 +61,6 @@ skins-factored-selected-skin-SKIN_ID=Description for the skins setting dropdown 
 ```
 Make sure to replace the word `SKIN_ID` in the key with the same skin ID you passed to `skins_factored.register_skin_id()`.  
 
-
 ### Dependency
 Finally, add the following to your mod's `info.json`:
 ```json
@@ -70,8 +68,9 @@ Finally, add the following to your mod's `info.json`:
     "skins-factored >= 1.0.0"
   ],
 ```
-If you're migrating an existing mod and don't want to make it a hard dependency, prefix the string with `? `. Don't forget to check if the `skins_factored` table exists before writing to it! This library is *technically* compatable with other character selector mods, but it's kinda jank; players have to choose the default character (usually the engineer) before changing to a !skins character. I intend to improve this in the future.  
-If you are creating a new skin mod and are using this library, *please* use a hard dependency, and **do not** try to overwrite the default `character` if this mod isn't found!! That will simply create the plentiful bundle of issues that this library was written to avoid.
+If you are creating a new skin mod and are using this library, you **must** use a hard dependency (the JSON above does that); **do not** try to overwrite the default `character` if this mod isn't found!! That will simply create the plentiful bundle of issues that this library was written to avoid.  
+If you're migrating an existing mod I *highly* recommend you also make this a hard dependency and remove any code that generates the prototype yourself or interacts with other skin changing mods. !skins is designed to make this no longer necessary, improving compatability with other mods that edit the base character, and ~~has~~ (will have soon™ i promise) compatability with miniMAXIme and RitnCharacters.
+
 
 # Legal stuff
 Copyright (C) 2023  Penguin_Spy  
