@@ -1,7 +1,7 @@
 --[[ data.lua © Penguin_Spy 2023
   Creates the table for mods to add their skin data through
 ]]
-local Common = require 'Common'
+local Common = require 'common'
 
 -- global
 ---@diagnostic disable-next-line: lowercase-global

@@ -2,7 +2,7 @@
   Returns a table containing functions used to create and interact with the skin picker GUI
 ]]
 local mod_gui = require 'mod-gui'
-local Common = require 'Common'
+local Common = require 'common'
 
 local function tags(table)
   table.mod = script.mod_name

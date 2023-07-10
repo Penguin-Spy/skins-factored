@@ -1,4 +1,4 @@
-local Common = require 'Common'
+local Common = require 'common'
 
 local PreviewSurface = {}
 
