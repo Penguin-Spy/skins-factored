@@ -9,6 +9,6 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Publish skins-factored
-      uses: Penguin-Spy/factorio-mod-portal-publish@master
-      env:
-        FACTORIO_MOD_API_KEY: ${{ secrets.FACTORIO_MOD_API_KEY }}
+      uses: Penguin-Spy/factorio-mod-portal-publish@main
+      with:
+        factorio-api-key: ${{ secrets.FACTORIO_MOD_API_KEY }}
