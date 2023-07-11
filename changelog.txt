@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.0
+Date: 10.7.2023
+  Compatibility:
+    - Detects when running with other skin selector mods; gives them our skins & disables our skin swapping functionality.
+    - In compatibility mode, displays a message in the GUI with information about registered skins & which mod is causing compatibility mode.
+    - Currently works with miniMAXIme and RitnCharacters (though the latter is inherently buggy and not recommended).
+    - miniMAXIme + !skins + Jetpack will cause a crash upon toggling the jetpack; this is waiting for a fix from minime.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: 9.7.2023
   Bugfixes:

@@ -2,7 +2,6 @@
   Returns a table containing functions used to create and interact with the skin picker GUI
 ]]
 local mod_gui = require 'mod-gui'
-local Common = require 'common'
 
 local function tags(table)
   table.mod = script.mod_name
@@ -22,20 +21,27 @@ local function create_window(player)
   local titlebar = main.add{type="flow", name="titlebar"}
   titlebar.drag_target = main
 
-  local title = titlebar.add{type="label", style="frame_title", caption={"skins-factored.title_skins-factored"}, ignored_by_interaction = true}
-  local drag  = titlebar.add{type="empty-widget", style = "skins_factored_titlebar_drag", ignored_by_interaction = true}
-  local close = titlebar.add{type="sprite-button", style = "frame_action_button", tooltip={"gui.close-instruction"},
+  -- Titlebar
+  titlebar.add{type="label", style="frame_title", caption={"skins-factored.title_skins-factored"}, ignored_by_interaction = true}
+  titlebar.add{type="empty-widget", style = "skins_factored_titlebar_drag", ignored_by_interaction = true}
+  titlebar.add{type="sprite-button", style = "frame_action_button", tooltip={"gui.close-instruction"},
     sprite = "utility/close_white", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black",
     tags = tags{action = "toggle_window"}
   }
 
+  -- Content
   main.add{type="label", style="skins_factored_skin_selector_label", caption={"skins-factored.about"}}
-  main.add{type="label", style="skins_factored_skin_selector_label", caption={"skins-factored.skin_selector_instructions"}}
 
-  -- need "scroll-pane" to put picker frame in
-  local picker_pane = main.add{type="scroll-pane", name="picker_pane", vertical_scroll_policy = "auto-and-reserve-space"}
+  if not Common.compatibility_mode then -- instructions & frame for skins table
+    main.add{type="label", style="skins_factored_skin_selector_label", caption={"skins-factored.skin-selector-instructions"}}
 
-  local picker_frame = picker_pane.add{type="frame", style="inside_shallow_frame_with_padding", direction="vertical", name="picker_frame"}
+    -- need "scroll-pane" to put picker frame in
+    local picker_pane = main.add{type="scroll-pane", name="picker_pane", vertical_scroll_policy = "auto-and-reserve-space"}
+    picker_pane.add{type="frame", style="inside_shallow_frame_with_padding", direction="vertical", name="picker_frame"}
+
+  else -- just compat instructions
+    main.add{type="label", style="skins_factored_skin_selector_label", caption=Common.compatibility_message}
+  end
 
   main.visible = false
   return main
@@ -48,7 +54,7 @@ return function(PreviewSurface)
   -- Recreates the independent skin selector window
   function GUI.initalize_player(player)
     log("gui initalize for " .. player.name)
-    
+
     -- destroy window if it exists
     local selector_window = player.gui.screen[selector_window_name]
     if selector_window then
@@ -57,7 +63,9 @@ return function(PreviewSurface)
 
     -- then create the window
     selector_window = create_window(player)
-    GUI.attach_skins_table(selector_window.picker_pane.picker_frame, player)
+    if not Common.compatibility_mode then
+      GUI.attach_skins_table(selector_window.picker_pane.picker_frame, player)
+    end
 
   end
 
@@ -112,7 +120,9 @@ return function(PreviewSurface)
     selector_window.visible = not selector_window.visible
     if selector_window.visible then
       player.opened = selector_window
-      GUI.update_skins_table(selector_window.picker_pane.picker_frame, player)
+      if not Common.compatibility_mode then
+        GUI.update_skins_table(selector_window.picker_pane.picker_frame, player)
+      end
     else
       player.opened = defines.gui_type.none
       global.open_skins_table[player.index] = nil
@@ -127,7 +137,7 @@ return function(PreviewSurface)
         type="sprite-button",
         name=selector_open_name,
         sprite ="entity/character",
-        tooltip = {"skins-factored.skin_selector"},
+        tooltip = {"skins-factored.skin-selector"},
         tags = tags{action = "toggle_window"}
       }
     end

@@ -1,4 +1,9 @@
-local Common = require 'common'
+--[[ preview-surface.lua © Penguin_Spy 2023
+  Manages the surface that holds the preview character entities.
+  Each player has their own copy of each skin, arranged in a grid:
+  Y is player_index * 4, X is (the skin's position in the mod load order) * 4
+]]
+
 
 local PreviewSurface = {}
 
@@ -48,8 +53,12 @@ end
 
 function PreviewSurface.remove_player(player_index)
   local data = global.preview_surface_data
+  if not data then -- handle an edge case when restarting the map (i think this was caused by RitnCharacters)
+    log("Attempting to remove player before preview surface was initalized!")
+    return
+  end
 
-  for i, skin_preview in pairs(data.skin_previews[player_index]) do
+  for _, skin_preview in pairs(data.skin_previews[player_index]) do
     if skin_preview.valid then
       skin_preview.destroy()
     end

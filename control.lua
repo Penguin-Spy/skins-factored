@@ -2,11 +2,13 @@
 local swap_character = require 'scripts.swap-character'
 local PreviewSurface = require 'scripts.preview-surface'
 local GUI = require('scripts.gui')(PreviewSurface)
-local Common = require 'common'
+Common = require 'common'
 
 local remote_interface = {}
 
-remote_interface.on_character_swapped = GUI.on_character_swapped
+if not Common.compatibility_mode then
+  remote_interface.on_character_swapped = GUI.on_character_swapped
+end
 
 -- Register Informatron pages
 --  this conditional require is safe because if one player has the mod, all must have it and so our checksum will still match.
@@ -19,6 +21,23 @@ end
 remote.add_interface("skins-factored", remote_interface)
 
 if script.active_mods["gvv"] then require("__gvv__.gvv")() end
+
+-- Pass events to GUI
+script.on_event(defines.events.on_gui_click, GUI.on_clicked)
+script.on_event(defines.events.on_gui_closed, GUI.on_closed)
+-- keybind
+script.on_event("skins_factored_toggle_interface", function(event)
+    local player = game.get_player(event.player_index)
+    GUI.toggle_window(player)
+end)
+-- shortcut bar button
+script.on_event(defines.events.on_lua_shortcut, function(event)
+  if event.prototype_name == "skins_factored_toggle_interface" then
+    local player = game.get_player(event.player_index)
+    GUI.toggle_window(player)
+  end
+end)
+
 
 -- [[ Local functions ]]
 
@@ -78,8 +97,13 @@ end
 -- [[ Scripting ]]
 
 -- Add the character swap command
-commands.add_command("character", {"command-help.character"}, function(command)
+commands.add_command("character", {"command-help.character"}, function (command)
   local player = game.get_player(command.player_index)
+
+  if Common.compatibility_mode then
+    player.print(Common.compatibility_message)
+    return
+  end
 
   -- Confirm the command is valid and safe to run
   if command.parameter then
@@ -104,13 +128,13 @@ commands.add_command("character", {"command-help.character"}, function(command)
 end)
 
 -- Add personal robots back to the player's network once it gets created
-script.on_event(defines.events.on_tick, function()
+local function on_tick()
   if global.orphaned_bots and #global.orphaned_bots > 0 then
     for player_index, robots in pairs(global.orphaned_bots) do
       local player = game.get_player(player_index)
       if player.character
-       and player.character.logistic_cell
-       and player.character.logistic_cell.logistic_network then
+      and player.character.logistic_cell
+      and player.character.logistic_cell.logistic_network then
         for _, robot in pairs(robots) do
           robot.logistic_network = player.character.logistic_cell.logistic_network
         end
@@ -118,10 +142,10 @@ script.on_event(defines.events.on_tick, function()
       end
     end
   end
-end)
+end
 
 -- If the player changed their setting & the command didn't, try to swap the player's character
-script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
+local function on_runtime_mod_setting_changed(event)
   if not (event.setting == "skins-factored-selected-skin") then return end
 
   local player = game.get_player(event.player_index)
@@ -143,24 +167,7 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, function(event)
   else  -- the event was triggered by the command
     table.remove(global.changed_setting, event.player_index)
   end
-end)
-
--- Pass events to GUI
-script.on_event(defines.events.on_gui_click, GUI.on_clicked)
-script.on_event(defines.events.on_gui_closed, GUI.on_closed)
--- keybind
-script.on_event("skins_factored_toggle_interface", function(event)
-    local player = game.get_player(event.player_index)
-    GUI.toggle_window(player)
-end)
--- shortcut bar button
-script.on_event(defines.events.on_lua_shortcut, function(event)
-  if event.prototype_name == "skins_factored_toggle_interface" then
-    local player = game.get_player(event.player_index)
-    GUI.toggle_window(player)
-  end
-end)
-
+end
 
 --[[ Swapping to chosen character again (these should not display any confirmation message) ]]
 
@@ -174,7 +181,7 @@ local function swap_on_player_respawned(event)
 end
 
 -- When the starting cutscene ends (activates on all, logic only runs when ending the intro)
-script.on_event(defines.events.on_cutscene_cancelled, function (event)
+local function on_cutscene_cancelled(event)
   local player = game.get_player(event.player_index)
 
   -- If the player doesn't have a character at the end of the cutscene, and we have a stored character for them to use
@@ -189,7 +196,7 @@ script.on_event(defines.events.on_cutscene_cancelled, function (event)
       global.cutscene_character[event.player_index] = nil
     end
   end
-end)
+end
 
 -- When a player joins a save for the first time
 local function swap_on_player_created(player)
@@ -221,6 +228,42 @@ end
 
 -- [[ Initalization ]]
 
+-- used to invoke remote calls to other mods once the game and all mods have fully initalized and loaded
+--  does not run on every load, only loads that run initalize()!
+local function runtime_initalize()
+  -- unregister this event
+  script.on_nth_tick(1, nil)
+  log("Runtime initalizing")
+
+  if Common.compatibility_mode then
+    -- list of all character prototypes we've added
+    local available_prototypes = {}
+    for _, skin_id in ipairs(Common.added_skins) do
+      table.insert(available_prototypes, Common.skin_to_prototype(skin_id))
+    end
+
+    -- miniMAXIme compat
+    if script.active_mods["minime"] then
+      log("minime compat: " .. serpent.line(available_prototypes))
+      remote.call("minime", "register_characters", available_prototypes)
+      log("called")
+
+    -- RitnCharacters compat
+    elseif script.active_mods["RitnCharacters"] then
+      for _, prototype in ipairs(available_prototypes) do
+        local name = {"entity-name." .. prototype}
+        log("adding skin " .. prototype .. " to RitnCharacters: " .. serpent.line(name))
+        remote.call("RitnCharacters", "remove_character", prototype) -- remove the auto-generated entry (it has an untranslated name)
+        remote.call("RitnCharacters", "add_character", name, prototype)
+      end
+
+    -- disabled because scenario doesn't support characters
+    else
+      log("Skin switching disabled, no compat loaded.")
+    end
+  end
+end
+
 -- Ensures players have GUI & PreviewSurface properly set up
 local function initalize_player(player)
   log("Initalizing player "..player.name.."["..player.index.."]")
@@ -229,7 +272,7 @@ local function initalize_player(player)
   GUI.initalize_player(player)
 
   -- if Informatron isn't present, add our own button for the GUI
-  if not script.active_mods["informatron"] then
+  if not script.active_mods["informatron"] and not Common.compatibility_mode then
     GUI.create_button(player)
   else  -- if it is, remove our button (if it exists)
     GUI.remove_button(player)
@@ -266,15 +309,28 @@ local function initalize()
   for _, player in pairs(game.players) do
     initalize_player(player)
   end
+
+  -- Initalize function that runs during runtime, once everything is done loading (on_init_final_fixes if you will)
+  script.on_nth_tick(1, runtime_initalize)
 end
 
 -- Runs every time the save is loaded (including the first time). Can't edit the global table
 local function loadalize()
-  -- Space Exploration overrides players dying with its own respawn system
-  if script.active_mods["space-exploration"] then
-    script.on_event(remote.call("space-exploration", "get_on_player_respawned_event"), swap_on_player_respawned)
+  -- register event handlers for skin switching related stuff
+  if not Common.compatibility_mode then
+    -- Space Exploration overrides players dying with its own respawn system
+    if script.active_mods["space-exploration"] then
+      script.on_event(remote.call("space-exploration", "get_on_player_respawned_event"), swap_on_player_respawned)
+    else
+      script.on_event(defines.events.on_player_respawned, swap_on_player_respawned)
+    end
+
+    script.on_event(defines.events.on_tick, on_tick)
+    script.on_event(defines.events.on_runtime_mod_setting_changed, on_runtime_mod_setting_changed)
+    script.on_event(defines.events.on_cutscene_cancelled, on_cutscene_cancelled)
+    log("Added all event listeners")
   else
-    script.on_event(defines.events.on_player_respawned, swap_on_player_respawned)
+    log("Loading in compatibility mode; event listeners disabled")
   end
 end
 
@@ -292,7 +348,9 @@ script.on_event(defines.events.on_player_created, function(event)
 
   initalize_player(player)
 
-  swap_on_player_created(player)
+  if not Common.compatibility_mode then
+    swap_on_player_created(player)
+  end
 end)
 
 -- Runs when a player is removed from a save. Only occurs in multiplayer, and is very uncommon. This code will probably never run outside of me testing it. Still important tho!
