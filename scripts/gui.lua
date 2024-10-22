@@ -1,5 +1,11 @@
---[[ gui.lua © Penguin_Spy 2023
+--[[ gui.lua © Penguin_Spy 2023-2024
   Returns a table containing functions used to create and interact with the skin picker GUI
+  
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  This Source Code Form is "Incompatible With Secondary Licenses", as
+  defined by the Mozilla Public License, v. 2.0.
 ]]
 local mod_gui = require 'mod-gui'
 
@@ -25,7 +31,7 @@ local function create_window(player)
   titlebar.add{type="label", style="frame_title", caption={"skins-factored.title_skins-factored"}, ignored_by_interaction = true}
   titlebar.add{type="empty-widget", style = "skins_factored_titlebar_drag", ignored_by_interaction = true}
   titlebar.add{type="sprite-button", style = "frame_action_button", tooltip={"gui.close-instruction"},
-    sprite = "utility/close_white", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black",
+    sprite = "utility/close", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black",
     tags = tags{action = "toggle_window"}
   }
 
@@ -74,7 +80,7 @@ return function(PreviewSurface)
 
     if not parent.skins_table then
       local skins_table = parent.add{type="table", column_count=5, style="skins_factored_skins_table", name="skins_table"}
-      global.open_skins_table[player.index] = skins_table
+      storage.open_skins_table[player.index] = skins_table
 
       for _, skin in pairs(Common.available_skins) do
         local skin_preview_entity = PreviewSurface.get_skin_preview(skin, player)
@@ -98,10 +104,10 @@ return function(PreviewSurface)
   -- Ran every time the window is opened or the player changes skin via GUI (window is guaranteed to exist)
   function GUI.update_skins_table(parent, player)
     local skins_table = parent.skins_table
-    global.open_skins_table[player.index] = skins_table
+    storage.open_skins_table[player.index] = skins_table
 
     for _, skin_button in pairs(skins_table.children) do
-      local is_active_skin = skin_button.tags.skin == global.active_skin[player.index]
+      local is_active_skin = skin_button.tags.skin == storage.active_skin[player.index]
       skin_button.enabled = not is_active_skin
 
       if is_active_skin and settings.get_player_settings(player)["skins-factored-render-character"].value then
@@ -125,7 +131,7 @@ return function(PreviewSurface)
       end
     else
       player.opened = defines.gui_type.none
-      global.open_skins_table[player.index] = nil
+      storage.open_skins_table[player.index] = nil
     end
   end
 
@@ -163,7 +169,8 @@ return function(PreviewSurface)
         GUI.toggle_window(player)
       elseif element.tags.action == "try_swap" then
         try_swap(player, element.tags.skin)
-        GUI.update_skins_table(element.parent.parent, player) -- march back up the element tree to get the correct parent frame
+        -- currently the opened GUI is closed due to engine bugs, so refreshing the table isn't necessary (or possible)
+        --GUI.update_skins_table(element.parent.parent, player) -- march back up the element tree to get the correct parent frame
       end
     end
   end
@@ -175,7 +182,6 @@ return function(PreviewSurface)
 
     if element.name == selector_window_name and element.visible then
       local player = game.players[event.player_index]
-
       GUI.toggle_window(player)
     end
   end
@@ -191,7 +197,7 @@ return function(PreviewSurface)
       if selector_window and selector_window.visible then player.opened = selector_window end
 
       -- Update the currently open skins_table
-      local skins_table = global.open_skins_table[player.index]
+      local skins_table = storage.open_skins_table[player.index]
       if skins_table and skins_table.valid then
         GUI.update_skins_table(skins_table.parent, player)
       end

@@ -1,5 +1,11 @@
---[[ common.lua © Penguin_Spy 2023 
+--[[ common.lua © Penguin_Spy 2023-2024
   Common utilities for dealing with skin ids across the data and control phases.
+  
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  This Source Code Form is "Incompatible With Secondary Licenses", as
+  defined by the Mozilla Public License, v. 2.0.
 ]]
 local util = require 'util'
 -- during the data stage the table is called mods
@@ -7,6 +13,7 @@ local util = require 'util'
 local active_mods = mods or script.active_mods
 
 -- cannot be ran during the settings phase (which is fine, we don't need this then)
+---@diagnostic disable-next-line: param-type-mismatch
 local available_skins = util.split(settings.startup["skins-factored-all-skins"].value, ";")
 
 -- debug info for compatibility mode

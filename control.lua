@@ -1,4 +1,12 @@
---[[ control.lua © Penguin_Spy 2023 ]]
+--[[ control.lua © Penguin_Spy 2023-2024
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  This Source Code Form is "Incompatible With Secondary Licenses", as
+  defined by the Mozilla Public License, v. 2.0.
+]]
+
 local swap_character = require 'scripts.swap-character'
 local PreviewSurface = require 'scripts.preview-surface'
 local GUI = require('scripts.gui')(PreviewSurface)
@@ -43,10 +51,10 @@ end)
 
 -- Update our tracking of which skin the player is currently using
 local function update_active_skin(player, skin)
-  global.active_skin[player.index] = skin
+  storage.active_skin[player.index] = skin
 
   -- Change setting, but mark that code did it (not the player)
-  global.changed_setting[player.index] = true
+  storage.changed_setting[player.index] = true
   settings.get_player_settings(player.index)["skins-factored-selected-skin"] = {value = skin}
 end
 
@@ -63,7 +71,7 @@ function try_swap(player, skin, ignore_already)
   end
 
   -- Check if the player is already using the requested skin
-  if (not ignore_already) and (skin == global.active_skin[player.index]) then
+  if (not ignore_already) and (skin == storage.active_skin[player.index]) then
     player.print{"command-output.character-already-skin", {"entity-name."..Common.skin_to_prototype(skin)}}
     return
   end
@@ -98,7 +106,7 @@ end
 
 -- Add the character swap command
 commands.add_command("character", {"command-help.character"}, function (command)
-  local player = game.get_player(command.player_index)
+  local player = game.get_player(command.player_index) ---@cast player -nil
 
   if Common.compatibility_mode then
     player.print(Common.compatibility_message)
@@ -129,16 +137,16 @@ end)
 
 -- Add personal robots back to the player's network once it gets created
 local function on_tick()
-  if global.orphaned_bots and #global.orphaned_bots > 0 then
-    for player_index, robots in pairs(global.orphaned_bots) do
+  if storage.orphaned_bots and #storage.orphaned_bots > 0 then
+    for player_index, robots in pairs(storage.orphaned_bots) do
       local player = game.get_player(player_index)
-      if player.character
+      if player and player.character
       and player.character.logistic_cell
       and player.character.logistic_cell.logistic_network then
         for _, robot in pairs(robots) do
           robot.logistic_network = player.character.logistic_cell.logistic_network
         end
-        table.remove(global.orphaned_bots, player_index)
+        table.remove(storage.orphaned_bots, player_index)
       end
     end
   end
@@ -148,10 +156,10 @@ end
 local function on_runtime_mod_setting_changed(event)
   if not (event.setting == "skins-factored-selected-skin") then return end
 
-  local player = game.get_player(event.player_index)
+  local player = game.get_player(event.player_index)  ---@cast player -nil
   local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
 
-  if not global.changed_setting[event.player_index] then
+  if not storage.changed_setting[event.player_index] then
     log("Player " .. player.name .. " changed setting, setting skin to " .. skin)
 
     local success = try_swap(player, skin)
@@ -159,21 +167,25 @@ local function on_runtime_mod_setting_changed(event)
       player.print{"command-output.character-success", {"entity-name."..success}}
     else
       -- Skin swap failed, we need to reset the player's setting to their current skin
-      global.changed_setting[event.player_index] = true
+      storage.changed_setting[event.player_index] = true
       -- this must be a call to get_player_settings, storing the result as a variable & writing to it later doesn't work.
-      settings.get_player_settings(event.player_index)["skins-factored-selected-skin"] = {value = global.active_skin[event.player_index]}
+      settings.get_player_settings(event.player_index)["skins-factored-selected-skin"] = {value = storage.active_skin[event.player_index]}
     end
 
   else  -- the event was triggered by the command
-    table.remove(global.changed_setting, event.player_index)
+    table.remove(storage.changed_setting, event.player_index)
   end
+end
+
+local function on_force_created(event)
+  PreviewSurface.ensure_hidden()
 end
 
 --[[ Swapping to chosen character again (these should not display any confirmation message) ]]
 
 -- When the player respawns
 local function swap_on_player_respawned(event)
-  local player = game.get_player(event.player_index)
+  local player = game.get_player(event.player_index)  ---@cast player -nil
   local skin = settings.get_player_settings(event.player_index)["skins-factored-selected-skin"].value
   log("Player " .. player.name .. " respawned, setting skin to " .. skin)
 
@@ -182,18 +194,18 @@ end
 
 -- When the starting cutscene ends (activates on all, logic only runs when ending the intro)
 local function on_cutscene_cancelled(event)
-  local player = game.get_player(event.player_index)
+  local player = game.get_player(event.player_index)  ---@cast player -nil
 
   -- If the player doesn't have a character at the end of the cutscene, and we have a stored character for them to use
   --  then we must be at the end of the intro crash site cutscene
   if not player.character then
-    local character = global.cutscene_character[event.player_index]
+    local character = storage.cutscene_character[event.player_index]
 
     if character and character.valid then
       log("Crash site cutscene ended, setting "..player.name.."'s character to saved "..character.name)
       player.set_controller{type=defines.controllers.character, character=character}
       character.destructible = true -- the cutscene should reset this value at the end, but since we changed characters it's reference is outdated
-      global.cutscene_character[event.player_index] = nil
+      storage.cutscene_character[event.player_index] = nil
     end
   end
 end
@@ -216,7 +228,7 @@ local function swap_on_player_created(player)
   if character then -- if swapping was a success
     -- if we're in the crash site cutscene, save the new character to use at the end of it
     if player.controller_type == defines.controllers.cutscene then
-      global.cutscene_character[player.index] = character
+      storage.cutscene_character[player.index] = character
     end
 
     -- Regardless of controller, update our tracking of which skin the player is currently using
@@ -280,15 +292,15 @@ local function initalize_player(player)
 
   -- If the player doesn't have an active skin, assume it's the engineer (this only happens when adding the mod to a preexisting save)
   --  if the player does have a chosen skin in the settings, it will be applied later (in swap_on_player_created)
-  if not global.active_skin[player.index] then
-    global.active_skin[player.index] = "engineer"
+  if not storage.active_skin[player.index] then
+    storage.active_skin[player.index] = "engineer"
   end
 
   -- If the player does have an active skin, but it's prototype no longer exists (mod adding it was removed),
   --  warn the player to load with the mod active & change skins to prevent losing inventory (by the time we can run code, the entity has already been deleted)
-  local intended_prototype = Common.skin_to_prototype(global.active_skin[player.index])
-  if not game.entity_prototypes[intended_prototype] then
-    player.print{"skins-factored.error-skin-removed", player.name, global.active_skin[player.index]}
+  local intended_prototype = Common.skin_to_prototype(storage.active_skin[player.index])
+  if not prototypes.entity[intended_prototype] then
+    player.print{"skins-factored.error-skin-removed", player.name, storage.active_skin[player.index]}
   end
 end
 
@@ -296,13 +308,13 @@ end
 local function initalize()
   log("Initalizing global data")
   -- All are tables indexed by player_index
-  global.active_skin = global.active_skin or {}               -- permanent list of what this player's current skin is. may be not present for a player if they haven't changed skins yet
+  storage.active_skin = storage.active_skin or {}               -- permanent list of what this player's current skin is. may be not present for a player if they haven't changed skins yet
 
-  global.changed_setting = global.changed_setting or {}       -- temporary indicator for the on_runtime_mod_setting_changed handler that code changed the setting, not a player. prevents recursive setting update handling
-  global.orphaned_bots = global.orphaned_bots or {}           -- temporary storage for bots that need to be attached to a player's personal logistics network once it becomes available
-  global.cutscene_character = global.cutscene_character or {} -- temporary list for setting a player's character after the intro cutscene
+  storage.changed_setting = storage.changed_setting or {}       -- temporary indicator for the on_runtime_mod_setting_changed handler that code changed the setting, not a player. prevents recursive setting update handling
+  storage.orphaned_bots = storage.orphaned_bots or {}           -- temporary storage for bots that need to be attached to a player's personal logistics network once it becomes available
+  storage.cutscene_character = storage.cutscene_character or {} -- temporary list for setting a player's character after the intro cutscene
 
-  global.open_skins_table = global.open_skins_table or {}     -- temporary list for getting the element of the skins_table for the player's current open GUI
+  storage.open_skins_table = storage.open_skins_table or {}     -- temporary list for getting the element of the skins_table for the player's current open GUI
 
   PreviewSurface.initalize()
 
@@ -314,7 +326,7 @@ local function initalize()
   script.on_nth_tick(1, runtime_initalize)
 end
 
--- Runs every time the save is loaded (including the first time). Can't edit the global table
+-- Runs every time the save is loaded (including the first time). Can't edit the game state
 local function loadalize()
   -- register event handlers for skin switching related stuff
   if not Common.compatibility_mode then
@@ -328,6 +340,7 @@ local function loadalize()
     script.on_event(defines.events.on_tick, on_tick)
     script.on_event(defines.events.on_runtime_mod_setting_changed, on_runtime_mod_setting_changed)
     script.on_event(defines.events.on_cutscene_cancelled, on_cutscene_cancelled)
+    script.on_event(defines.events.on_force_created, on_force_created)
     log("Added all event listeners")
   else
     log("Loading in compatibility mode; event listeners disabled")
@@ -360,7 +373,7 @@ script.on_event(defines.events.on_player_removed, function(event)
   PreviewSurface.remove_player(event.player_index)
 
   -- Delete all of this players' data in the global tables
-  for _, value in pairs(global) do
+  for _, value in pairs(storage) do
     if type(value) == "table" then
       value[event.player_index] = nil
     end

@@ -1,5 +1,11 @@
---[[ settings-updates.lua © Penguin_Spy 2023
+--[[ settings-updates.lua © Penguin_Spy 2023-2024
   Creates the skin dropdown menu for players to choose their skin
+  
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  This Source Code Form is "Incompatible With Secondary Licenses", as
+  defined by the Mozilla Public License, v. 2.0.
 ]]
 local skin_ids = skins_factored_INTERNAL.registered_skin_ids
 

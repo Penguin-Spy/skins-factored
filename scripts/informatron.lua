@@ -1,5 +1,11 @@
---[[ informatron.lua © Penguin_Spy 2023
+--[[ informatron.lua © Penguin_Spy 2023-2024
   Informatron page implementation. https://mods.factorio.com/mod/informatron
+  
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  This Source Code Form is "Incompatible With Secondary Licenses", as
+  defined by the Mozilla Public License, v. 2.0.
 ]]
 
 -- return a function so we can yoink a reference to the GUI
@@ -25,7 +31,7 @@ return function(GUI)
         picker_flow.style.horizontal_align = "center"
         picker_flow.style.horizontally_stretchable = true
 
-        local picker_frame = picker_flow.add{type="frame", style="blueprint_header_frame", direction="vertical", name="picker_frame"}
+        local picker_frame = picker_flow.add{type="frame", style="deep_frame_in_shallow_frame_for_description", direction="vertical", name="picker_frame"}
         picker_frame.style.width = 824
         picker_frame.style.horizontally_stretchable = false
 

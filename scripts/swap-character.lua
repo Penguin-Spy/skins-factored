@@ -1,6 +1,12 @@
---[[ swap-character.lua © Penguin_Spy 2023
+--[[ swap-character.lua © Penguin_Spy 2023-2024
   Provides a utility function to swap which prototype a character is using
-  You may use this file in your own mods, provided that your mod is not replacing the functionality of Skins Factored and you adhere to the GPL-3.0 license terms.
+  You may use this file in your own mods, provided that your mod is not replacing the functionality of Skins Factored.
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  This Source Code Form is "Incompatible With Secondary Licenses", as
+  defined by the Mozilla Public License, v. 2.0.
 ]]
 
 -- https://lua-api.factorio.com/latest/LuaInventory.html
@@ -19,11 +25,10 @@ local function move_entity_inventory(from_entity, to_entity, inventory)
   end
 end
 
---[[ Swap the prototype of the character a player is using
-  old_character (LuaEntity) = the player's current character entity
-  new_prototype_name (string) = the prototype name of the new character entity to be created
-  player (LuaPlayer) = optional, if not specified the player's control will not be passed to the new character (useful for cutscenes)
-]]
+-- Swap the prototype of the character a player is using
+---@param old_character LuaEntity   the player's current character entity
+---@param new_prototype_name string the prototype name of the new character entity to be created
+---@param player LuaPlayer
 local function swap_character(old_character, new_prototype_name, player)
 
   -- (in)sanity checks
@@ -31,7 +36,7 @@ local function swap_character(old_character, new_prototype_name, player)
     log("Character swap failed; old_character is invalid")
     return false
   end
-  if not game.entity_prototypes[new_prototype_name] then
+  if not prototypes.entity[new_prototype_name] then
     log("Character swap failed; new_prototype_name is not a valid prototype")
     return false
   end
@@ -41,6 +46,7 @@ local function swap_character(old_character, new_prototype_name, player)
   --[[ Create new character ]]
 
   local position = old_character.position -- save current position
+  ---@diagnostic disable-next-line: param-type-mismatch
   old_character.teleport(1) -- move the old char out of the way (relative)
 
   -- find a safe, nearby position to put the character if they would be on top of something after swapping
@@ -56,14 +62,13 @@ local function swap_character(old_character, new_prototype_name, player)
     name = new_prototype_name,
     position = position,
     force = old_character.force
-  }
+  } ---@cast new_character -nil
 
   -- [[ Properties ]]
   new_character.health = old_character.health
   new_character.destructible = old_character.destructible
   new_character.direction = old_character.direction
 
-  new_character.character_personal_logistic_requests_enabled = old_character.character_personal_logistic_requests_enabled
   new_character.allow_dispatching_robots = old_character.allow_dispatching_robots
   new_character.selected_gun_index = old_character.selected_gun_index
 
@@ -79,26 +84,44 @@ local function swap_character(old_character, new_prototype_name, player)
    and old_character.logistic_cell
    and old_character.logistic_cell.logistic_network
    and old_character.logistic_cell.logistic_network.robots then
-    global.orphaned_bots = global.orphaned_bots or {} -- create table if it doesn't exist
-    global.orphaned_bots[player.index] = old_character.logistic_cell.logistic_network.robots
+    storage.orphaned_bots = storage.orphaned_bots or {} -- create table if it doesn't exist
+    storage.orphaned_bots[player.index] = old_character.logistic_cell.logistic_network.robots
   end
 
-  -- Copy (hopefully) all logistics requests. A bit jank because indexes can point to blank spots, and we can't know how many filled slots there are.
-  -- This loops until we run past 50 consecutive blank slots.
-  local i, consecutive_blanks = 1, 0
-  repeat
-    local slot = old_character.get_personal_logistic_slot(i)
-    if slot.name then
-      new_character.set_personal_logistic_slot(i, slot)
-    else
-      consecutive_blanks = consecutive_blanks + 1
+  -- Logistics network requests
+  local old_logistics_requests = old_character.get_logistic_point(defines.logistic_member_index.character_requester)
+  if old_logistics_requests then
+    local new_logistics_requests = new_character.get_logistic_point(defines.logistic_member_index.character_requester)  ---@cast new_logistics_requests -nil
+    new_logistics_requests.enabled = old_logistics_requests.enabled
+    new_logistics_requests.trash_not_requested = old_logistics_requests.trash_not_requested
+    new_logistics_requests.remove_section(1) -- remove default section
+
+    for _, old_section in pairs(old_logistics_requests.sections) do
+      local new_section = new_logistics_requests.add_section(old_section.group ~= "" and old_section.group or nil)---@cast new_section -nil
+      if old_section.is_manual then
+        -- copy filters of section
+        for slot_index, filter in pairs(old_section.filters) do
+          new_section.set_slot(slot_index, filter)
+        end
+      else
+        -- copy request group
+        new_section.group = old_section.group
+      end
+      -- copy settings of section
+      new_section.active = old_section.active
+      new_section.multiplier = old_section.multiplier
     end
-    i = i + 1
-  until consecutive_blanks > 50
+  end
 
   -- [[ Inventory ]]
-  local open_gui = old_character.opened
+  -- cannot access character.opened during a cutscene: https://forums.factorio.com/viewtopic.php?f=7&t=116516
+  --local open_gui = old_character.opened
   old_character.cursor_stack.swap_stack(new_character.cursor_stack)
+
+  -- ghost cursor (crashes game: https://forums.factorio.com/viewtopic.php?f=7&t=116484)
+  --if old_character.cursor_ghost then
+  --  new_character.cursor_ghost = old_character.cursor_ghost
+  --end
 
   -- Crafting queue
 
@@ -106,7 +129,7 @@ local function swap_character(old_character, new_prototype_name, player)
   -- We reset the crafting progress and cancel the craft anyways to prevent the item from being saved & re-crafted again by the new character.
   if(old_character.crafting_queue_progress > 1) then
     old_character.crafting_queue_progress = 0
-    old_character.cancel_crafting(old_character.crafting_queue[1])
+    old_character.cancel_crafting{index = old_character.crafting_queue[1].index, count = old_character.crafting_queue[1].count}
   end
 
   -- Save crafting queue
@@ -167,19 +190,23 @@ local function swap_character(old_character, new_prototype_name, player)
     local hand_location = player.hand_location
     local opened_self = player.opened_self
 
+    -- if the player is in remote view on a different surface, we must first move them back to their character's surface
+    player.set_controller{type=defines.controllers.remote, surface=new_character.surface}
     player.set_controller{type=defines.controllers.character, character=new_character}
 
     if opened_self then player.opened = new_character end
     if hand_location then player.hand_location = hand_location end
   end
 
-  if open_gui then
-    new_character.opened = open_gui
-  end
+  -- assigning the gui triggers the closing event, causing the skin selector to become visible=false if it's whats open
+  --if open_gui then
+  --  new_character.opened = open_gui
+  --end
 
   -- Inform all mods that we swapped characters
   for interface_name, interface_functions in pairs(remote.interfaces) do
     if interface_functions["on_character_swapped"] then
+      ---@diagnostic disable-next-line: missing-fields
       remote.call(interface_name, "on_character_swapped", {
         old_unit_number = old_character.unit_number,
         new_unit_number = new_character.unit_number,

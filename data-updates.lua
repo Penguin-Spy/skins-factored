@@ -1,10 +1,14 @@
---[[ data-updates.lua © Penguin_Spy 2023
+--[[ data-updates.lua © Penguin_Spy 2023-2024
   Use the registered skins to create prototypes for them
   During data-final-fixes mods may use these prototypes for their own purposes
   (such as `mods.factorio.com/mod/jetpack` duplicating them for the flying character prototypes)
+
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  This Source Code Form is "Incompatible With Secondary Licenses", as
+  defined by the Mozilla Public License, v. 2.0.
 ]]
--- the Lua Language Server (sumneko.lua) isn't aware of table.deepcopy()
----@diagnostic disable: undefined-field
 
 local util = require "util"
 

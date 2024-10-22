@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.0
+Date: 21.10.2024
+  Features:
+    - Update to Factorio 2.0.
+    - No changes are required by dependent character mods; just change the factorio_version to 2.0 in your info.json!
+
+---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 10.7.2023
   Compatibility:
