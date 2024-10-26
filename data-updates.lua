@@ -14,19 +14,19 @@ local util = require "util"
 
 local all_armors = {}
 local orig_char = data.raw["character"]["character"]
-for _,animation in ipairs(orig_char.animations) do
+for _, animation in ipairs(orig_char.animations) do
   if animation.armors then
-    for _,armor in ipairs(animation.armors) do
+    for _, armor in ipairs(animation.armors) do
       table.insert(all_armors, armor)
     end
   end
 end
 
-local function get_missing_armors(armors)
+local function get_missing_armors(animations)
   local missing_armors = table.deepcopy(all_armors)
-  for _,animation in ipairs(armors) do
+  for _, animation in ipairs(animations) do
     if animation.armors then
-      for _,armor in ipairs(animation.armors) do
+      for _, armor in ipairs(animation.armors) do
         util.remove_from_list(missing_armors, armor)
       end
     end
@@ -36,7 +36,6 @@ end
 
 
 for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
-
   --[[ Create character prototype ]]
   log("Creating skin " .. skin_id)
   local character = table.deepcopy(data.raw["character"]["character"])
@@ -56,7 +55,7 @@ for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
       if animation.armors then
         if skin.armor_animations[tier] and skin.armor_animations[tier].armors then
           log("merging armors " .. table.concat(animation.armors, ", ") .. " into tier " .. tier)
-          skin.armor_animations[tier].armors = util.merge {
+          skin.armor_animations[tier].armors = util.merge{
             skin.armor_animations[tier].armors,
             animation.armors
           }
@@ -66,14 +65,16 @@ for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
 
     -- If that didn't clear up everything, this skin doesn't have enough armor tiers. This could be because either:
     --  1) this skin has less than 3 armor teirs or
-    --  2) a mod adds more than 3 armor tiers, and this skin doesn't have those tiers
+    --  2) a mod adds more than 3 armor tiers to the base character, and this skin doesn't have those tiers
     -- either way, the solution is to just put it into the highest tier we do have
     missing_armors = get_missing_armors(skin.armor_animations)
     if #missing_armors > 0 then
       log(skin_id .. " is STILL missing armors :bruh: " .. table.concat(missing_armors, ", "))
       -- last resort, just slap it on the end
+      local highest_tier = skin.armor_animations[#skin.armor_animations]
+      if not highest_tier.armors then highest_tier.armors = {} end
       for _, armor in ipairs(missing_armors) do
-        table.insert(skin.armor_animations[#skin.armor_animations].armors, armor)
+        table.insert(highest_tier.armors, armor)
       end
     end
   end
@@ -81,9 +82,10 @@ for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
   character.animations = skin.armor_animations
 
   -- Water reflection texture (optional)
-  if skin.reflection then
-    character.water_reflection.pictures.filename = skin.reflection
-  end
+  character.water_reflection = skin.water_reflection or character.water_reflection
+
+  -- Light definition (optional)
+  character.light = skin.light or character.light
 
   --[[ Create character-corpse prototype ]]
   if skin.corpse_animation then
@@ -99,7 +101,7 @@ for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
 
     for tier, animation in ipairs(skin.armor_animations) do
       if animation.armors then
-        for _,armor in ipairs(animation.armors) do
+        for _, armor in ipairs(animation.armors) do
           corpse_armor_mapping[armor] = tier
         end
       end
@@ -113,13 +115,33 @@ for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
     character.character_corpse = corpse.name
 
     -- Add the corpse's prototype
-    data:extend({
-      corpse
-    })
+    data:extend{ corpse }
+  end
+
+  --[[ Create footprint particle prototype ]]
+  if skin.footprint_particle then
+    log("Creating skin " .. skin_id .. "'s footprint particles")
+    local particle = table.deepcopy(data.raw["optimized-particle"]["character-footprint-particle"])
+    particle.name = "character-" .. skin_id .. "-footprint-particle"
+    particle.pictures = skin.footprint_particle.pictures
+
+    -- Apply to the character
+    for _, footprint_particle in pairs(character.footprint_particles) do
+      -- replace only references to the engineer's footprint particles
+      if footprint_particle.particle_name == "character-footprint-particle" then
+        footprint_particle.particle_name = particle.name
+      end
+    end
+    -- replace any of these fields if provided
+    character.left_footprint_frames = skin.footprint_particle.left_footprint_frames or character.left_footprint_frames
+    character.right_footprint_frames = skin.footprint_particle.right_footprint_frames or character.right_footprint_frames
+    character.left_footprint_offset = skin.footprint_particle.left_footprint_offset or character.left_footprint_offset
+    character.right_footprint_offset = skin.footprint_particle.right_footprint_offset or character.right_footprint_offset
+
+    -- Add the particle's prototype
+    data:extend{ particle }
   end
 
   -- Add the character's prototype
-  data:extend({
-    character
-  })
+  data:extend{ character }
 end

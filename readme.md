@@ -5,7 +5,7 @@ This is a Factorio library mod that makes it easy for other mods to add custom c
 This mod takes a different approach than other skin-changer mods: instead of trying to extract the skins from multiple installed skin mods, it acts as a library for mods to include, meaning a player can install just one skin mod, or any number of them, and they'll all work as expected (if they use this library).
 
 This library was written to be compatible with almost all mods that edit the default character prototype. It is explicitly compatible with [Jetpack](https://mods.factorio.com/mod/jetpack), [Space Exploration](https://mods.factorio.com/mod/space-exploration), and [RPG System](https://mods.factorio.com/mod/RPGsystem). If you encounter any issues with compatibility with another mod, please [make an issue](https://github.com/Penguin-Spy/skins-factored/issues) or [a discussion post](https://mods.factorio.com/mod/skins-factored/discussion)!  
-(Note that with the release of Factorio 2.0, mod updates may cause compatability issues, make a discussion post if you encounter any!)
+(Note that with the release of Factorio 2.0, mod updates may cause compatibility issues, make a discussion post if you encounter any!)
 
 
 # Usage
@@ -27,29 +27,42 @@ Then, add the following lines to your `data.lua`:
 ```lua
 skins_factored.create_skin("your-skin-id-here", {
   -- shown on the inventory button and in the gui, REQUIRED
-  icon = "__base__/path/to/character.png",
- 
-  -- reflection thing for water, OPTIONAL, will default to the default player's texture
-  water_reflection = "__base__/path/to/character-reflection.png", 
- 
-  -- CharacterArmorAnimation, the character prototype's animations table, REQUIRED
-  -- ignores the `armors` table, you should define the animations in the same order as the default character
-  --   (3 teirs: armorless/light armor, heavy/modular armor, power armor/power armor mk2)
-  -- if only one tier is provided, it is used for all armor. if more than 3 are provided, the extras are only used if the default character has had more teirs added to it (by other mods)
-  armor_animations = {...}, 
- 
-  -- AnimationVariations, the character-corpse prototype's pictures table, OPTIONAL, will default to using the vanilla engineer's corpse
+  icon = "__mod-id__/path/to/character_icon.png",
+
+  -- array of CharacterArmorAnimation, the character prototype's animations table, REQUIRED
+  -- if a mod adds armors that are not specified in the armors table for any tier provided here, they are added to the highest tier available
+  armor_animations = {...},
+
+  -- optional AnimationVariations, the character-corpse prototype's pictures table; if not specified the engineer's corpse will be used
   corpse_animation = {...}
+
+  -- optional WaterReflectionDefinition, specifies the reflection of the character in water
+  water_reflection = {...},
+
+  -- optional footprint particle definition
+  footprint_particle = {
+    pictures = {...},                    -- AnimationVariations, required if defining a footprint particle
+    right_footprint_frames = { 10, 21 }, -- list of frames, optional
+    left_footprint_frames = { 5, 16 },   -- list of frames, optional
+    left_footprint_offset = { 0.1, 0 },  -- Vector, optional
+    right_footprint_offset = { -0.1, 0 } -- Vector, optional
+  },
+
+  -- optional LightDefinition, the light emitted by the character, including both the circular glow *and* the flashlight
+  light = {...}
 })
 ```
 The `animations` key is identical to what you would overwrite the default `character.animations` table with. The `corpse_animations` key is identical to what you would overwrite the default `character-corpse.pictures` table with.  
 The number of animations and what armors they apply to must match between `animations` and `corpse_animations`. The `animations[n].armors` table is used to merge armor tiers in case your mod does not have all 3 armor tiers (or more if other mods add more tiers).  
-For an example of what the `animations` key should look like, see [here](https://gist.github.com/Penguin-Spy/ab9c81511791bb90243d3e8bec2dcbd5).
+For an example of what the `animations` key should look like, see [here](https://gist.github.com/Penguin-Spy/ab9c81511791bb90243d3e8bec2dcbd5).  
+All optional properties will default to using the base game engineer's values if not specified.  
 
 Factorio API documentation for types:  
 - [AnimationVariations](https://lua-api.factorio.com/latest/types/AnimationVariations.html)
 - [CharacterArmorAnimation](https://lua-api.factorio.com/latest/types/CharacterArmorAnimation.html)
 - [RotatedAnimation](https://lua-api.factorio.com/latest/types/RotatedAnimation.html)
+- [WaterReflectionDefinition](https://lua-api.factorio.com/latest/types/WaterReflectionDefinition.html)
+- [LightDefinition](https://lua-api.factorio.com/latest/types/LightDefinition.html)
 
 ### Localization
 Create a [localization file](https://wiki.factorio.com/Tutorial:Localisation) with the following contents: 
@@ -75,7 +88,7 @@ If your mod adds multiple skins, make sure to group all `[entity-name]`s, etc. u
 Finally, add the following to your mod's `info.json`:
 ```json
   "dependencies": [
-    "skins-factored >= 1.2.0"
+    "skins-factored >= 1.2.1"
   ],
 ```
 If you are creating a new skin mod and are using this library, you **must** use a hard dependency (the JSON above does that); **do not** try to overwrite the default `character` if this mod isn't found!! That will simply create the plentiful bundle of issues that this library was written to avoid.  

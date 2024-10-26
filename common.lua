@@ -1,13 +1,13 @@
 --[[ common.lua © Penguin_Spy 2023-2024
   Common utilities for dealing with skin ids across the data and control phases.
-  
+
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at https://mozilla.org/MPL/2.0/.
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
 ]]
-local util = require 'util'
+local util = require "util"
 -- during the data stage the table is called mods
 ---@diagnostic disable-next-line: undefined-global
 local active_mods = mods or script.active_mods
@@ -21,7 +21,7 @@ local available_skins = util.split(settings.startup["skins-factored-all-skins"].
 local added_skins = table.deepcopy(available_skins)
 util.remove_from_list(added_skins, "engineer")
 local compatibility_mode = (active_mods["minime"] and "miniMAXIme") or (active_mods["RitnCharacters"] and "RitnCharacters") or false
-local compatibility_message = {"skins-factored.compatibility-mode-instructions", compatibility_mode, table.concat(added_skins, ", ")}
+local compatibility_message = { "skins-factored.compatibility-mode-instructions", compatibility_mode, table.concat(added_skins, ", ") }
 
 -- Common utilities used in various files
 local Common = {
@@ -49,10 +49,10 @@ end
 
 function Common.prototype_to_skin(prototype)
   return (
-    (prototype == "character"     -- vanilla character name
-    or prototype == "engineer")   -- "compatibility" with Eradicator's Character Additions, will allow players to swap by going back to the engineer first
-      and "engineer")
-    or string.sub(prototype, 11)  -- cut off "character-" prefix
+        (prototype == "character"      -- vanilla character name
+          or prototype == "engineer")  -- "compatibility" with Eradicator's Character Additions, will allow players to swap by going back to the engineer first
+        and "engineer")
+      or string.sub(prototype, 11)     -- cut off "character-" prefix
 end
 
 return Common

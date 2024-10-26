@@ -1,4 +1,14 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.1
+Date: 25.10.2024
+  Features:
+    - Allow skin mods to specify custom footprint particles for a character.
+    - Allow skin mods to specify a custom light definition for a character.
+    - More error detection when registering a skin id.
+  Bugfixes:
+    - Fix how custom water reflections are specified, and correctly apply them to the prototype.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.2.0
 Date: 21.10.2024
   Features:

@@ -1,5 +1,5 @@
 --[[ data.lua © Penguin_Spy 2023-2024
-  Creates the table for mods to add their skin data through
+  Provides the function for mods to create their skin
 
   This Source Code Form is subject to the terms of the Mozilla Public
   License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,48 +7,63 @@
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
 ]]
-local Common = require 'common'
+local Common = require "common"
 
 --- Data for a character skin
 ---@class skins_factored_skin_data
 ---@field icon string
----@field water_reflection string?
----@field armor_animations data.CharacterArmorAnimation
+---@field armor_animations data.CharacterArmorAnimation[]
+---@field water_reflection data.WaterReflectionDefinition?
 ---@field corpse_animation data.AnimationVariations?
+---@field footprint_particle { pictures: data.AnimationVariations, left_footprint_frames?: double[], right_footprint_frames?: double[], left_footprint_offset?: data.Vector, right_footprint_offset?: data.Vector }?
+---@field light data.LightDefinition?
 
--- global
+-- !skins API
 ---@diagnostic disable-next-line: lowercase-global
 skins_factored = {
   schema_version = 2,
+  ---@private
+  register_skin_id = function() error("register_skin_id() must be called in the settings stage!") end
 }
 
 -- do not touch!!
 ---@diagnostic disable-next-line: lowercase-global
 skins_factored_INTERNAL = {
+  ---@type table<string, skins_factored_skin_data>
   registered_skins = {}
 }
 
--- Creates a character skin. 
+-- Creates a character skin.
 ---```lua
----skins_factored.create_skin("skin-id", {
+---skins_factored.create_skin("your-skin-id-here", {
 ---  -- shown on the inventory button and in the gui, REQUIRED
----  icon = "__base__/path/to/character.png",
---- 
----  -- reflection thing for water, OPTIONAL, will default to the default player's texture
----  water_reflection = "__base__/path/to/character-reflection.png", 
---- 
----  -- CharacterArmorAnimation, the character prototype's animations table, REQUIRED
----  -- ignores the `armors` table, you should define the animations in the same order as the default character
----  --   (3 teirs: armorless/light armor, heavy/modular armor, power armor/power armor mk2)
----  -- if only one tier is provided, it is used for all armor. if more than 3 are provided, the extras are only used if the default character has had more teirs added to it (by other mods)
----  armor_animations = {...}, 
---- 
----  -- AnimationVariations, the character-corpse prototype's pictures table, OPTIONAL, will default to using the vanilla engineer's corpse
+---  icon = "__mod-id__/path/to/character_icon.png",
+---
+---  -- array of CharacterArmorAnimation, the character prototype's animations table, REQUIRED
+---  -- if a mod adds armors that are not specified in the armors table for any tier provided here, they are added to the highest tier available
+---  armor_animations = {...},
+---
+---  -- optional AnimationVariations, the character-corpse prototype's pictures table; if not specified the engineer's corpse will be used
 ---  corpse_animation = {...}
+---
+---  -- optional WaterReflectionDefinition, specifies the reflection of the character in water
+---  water_reflection = {...},
+---
+---  -- optional footprint particle definition
+---  footprint_particle = {
+---    pictures = {...},                    -- AnimationVariations, required if defining a footprint particle
+---    right_footprint_frames = { 10, 21 }, -- list of frames, optional
+---    left_footprint_frames = { 5, 16 },   -- list of frames, optional
+---    left_footprint_offset = { 0.1, 0 },  -- Vector, optional
+---    right_footprint_offset = { -0.1, 0 } -- Vector, optional
+---  },
+---
+---  -- optional LightDefinition, the light emitted by the character, including both the circular glow *and* the flashlight
+---  light = {...}
 ---})
 ---```
----@param skin_id string  the identifier for the skin, used in programming context and localization, not shown to the end user
----@param data skins_factored_skin_data   data for the character skin
+---@param skin_id string                  The internal identifier for the skin, as previously registered with `skins_factored.register_skin_id()`
+---@param data skins_factored_skin_data   Data for the character skin
 function skins_factored.create_skin(skin_id, data)
   if not Common.is_skin_available(skin_id) then
     error("Unknown skin id: '" .. skin_id .. "', did you forget to register it in settings.lua?")
@@ -58,7 +73,7 @@ function skins_factored.create_skin(skin_id, data)
     error("Unable to create skin '" .. skin_id .. "' - 'icon' property is missing.")
   elseif not data.armor_animations then
     error("Unable to create skin '" .. skin_id .. "' - 'armor_animations' property is missing.")
-  --[[else
+    --[[else
     -- check for hr_version & warn if present
     local idle_anim = data.armor_animations[1].idle
     if idle_anim.layers then idle_anim = idle_anim.layers[1] end
@@ -73,14 +88,14 @@ end
 
 -- [[ Internal data stuff ]]
 
-data:extend({
+data:extend{
   {
     type = "custom-input",
     name = "skins_factored_toggle_interface",
     key_sequence = "ALT + S",
     order = "a",
     consuming = "game-only"
-  } --[[@as data.CustomInputPrototype]],
+  }  --[[@as data.CustomInputPrototype]],
   {
     type = "shortcut",
     name = "skins_factored_toggle_interface",
@@ -90,8 +105,8 @@ data:extend({
     icon_size = 64,
     small_icon = "__core__/graphics/icons/entity/character.png",
     small_icon_size = 64
-  } --[[@as data.ShortcutPrototype]]
-})
+  }  --[[@as data.ShortcutPrototype]]
+}
 
 local styles = data.raw["gui-style"].default
 
@@ -127,11 +142,11 @@ styles["skins_factored_skins_table"] = {
 }
 
 -- 2x3 tiles, width*height
-local skin_preview_size = {128, 196}
+local skin_preview_size = { 128, 196 }
 
 local skin_button_size = {
-  12 + skin_preview_size[1] + 12,       -- left margin+padding, skin_preview, right margin+padding
-  8 + skin_preview_size[2] + 8 + 24 + 8 -- top  margin+padding, skin_preview, padding, skin_name, bottom padding/margin
+  12 + skin_preview_size[1] + 12,        -- left margin+padding, skin_preview, right margin+padding
+  8 + skin_preview_size[2] + 8 + 24 + 8  -- top  margin+padding, skin_preview, padding, skin_name, bottom padding/margin
 }
 
 styles["skins_factored_skin_button"] = {
@@ -142,28 +157,28 @@ styles["skins_factored_skin_button"] = {
   vertical_align = "center",
   top_padding = 8,
   disabled_graphical_set = {  -- When the button is disabled, it's selected; render it as green.
-    base = {position = {68, 17}, corner_size = 8},
+    base = { position = { 68, 17 }, corner_size = 8 },
   }
 }
 
 styles["skins_factored_skin_label"] = {
   type = "label_style",
   parent = "label",
-  width = skin_preview_size[1],           -- preview width
-  top_padding = skin_preview_size[2] + 4, -- preview height + 4 top_margin
+  width = skin_preview_size[1],            -- preview width
+  top_padding = skin_preview_size[2] + 4,  -- preview height + 4 top_margin
   horizontal_align = "center",
   vertical_align = "center",
   font = "default-dialog-button",
-  font_color = {28, 28, 28}
+  font_color = { 28, 28, 28 }
 }
 
 styles["skins_factored_skin_button_inner_frame"] = {
   type = "frame_style",
   default_graphical_set = {
     base = {
-      position = {200, 128},
+      position = { 200, 128 },
       corner_size = 8,
-      tint = {0, 0, 0, 1},
+      tint = { 0, 0, 0, 1 },
       scale = 0.5
     },
   },
@@ -174,5 +189,5 @@ styles["skins_factored_skin_button_inner_frame"] = {
 styles["skins_factored_skin_button_camera"] = {
   type = "camera_style",
   parent = "camera",
-  size = {skin_preview_size[1], skin_preview_size[2] + 96} -- offset height to center camera when focused on entity
+  size = { skin_preview_size[1], skin_preview_size[2] + 96 }  -- offset height to center camera when focused on entity
 }
