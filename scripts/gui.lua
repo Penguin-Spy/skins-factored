@@ -97,7 +97,12 @@ return function(PreviewSurface)
         }
         entity_camera.entity = skin_preview_entity
 
-        skin_button.add{ type = "label", style = "skins_factored_skin_label", caption = { "entity-name." .. skin_preview_entity.name }, ignored_by_interaction = true }
+        local label_text = { "?", { "entity-name." .. skin_preview_entity.name }, "???" }
+        if Common.external_skins[skin_preview_entity.name] then
+          label_text = { "", label_text, " [img=utility/warning]" }
+          skin_button.caption = { "", skin_button.caption, "\n\n", { "skins-factored.external-skin-warning" } }
+        end
+        skin_button.add{ type = "label", style = "skins_factored_skin_label", caption = label_text, ignored_by_interaction = true }
       end
     end
   end

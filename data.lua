@@ -89,6 +89,12 @@ end
 
 -- [[ Internal data stuff ]]
 
+-- Compatability with https://mods.factorio.com/mod/CharacterModHelper
+if mods["CharacterModHelper"] then
+  CharModHelper.enable_multi_character("skins-factored")
+end
+
+-- Prototypes
 data:extend{
   {
     type = "custom-input",

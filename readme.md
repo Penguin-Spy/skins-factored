@@ -2,9 +2,10 @@
 > Pronounced "`skins factored`", written as "`!skins`" in all lowercase
 
 This is a Factorio library mod that makes it easy for other mods to add custom characters (skins), with a character picker.  
-This mod takes a different approach than other skin-changer mods: instead of trying to extract the skins from multiple installed skin mods, it acts as a library for mods to include, meaning a player can install just one skin mod, or any number of them, and they'll all work as expected (if they use this library).
+This mod takes a different approach than other skin-changer mods: instead of trying to extract the skins from multiple installed skin mods, it acts as a library for mods to include, meaning a player can install just one skin mod, or any number of them, and they'll all work as expected (if they use this library).  
+As of 1.3.0, this mod can also collect skins that do not use this API, but haven't overridden the default engineer character. If you are a developer of one of these mods, I still recommend you use this API as it's much simpler.
 
-This library was written to be compatible with almost all mods that edit the default character prototype. It is explicitly compatible with [Jetpack](https://mods.factorio.com/mod/jetpack), [Space Exploration](https://mods.factorio.com/mod/space-exploration), and [RPG System](https://mods.factorio.com/mod/RPGsystem). If you encounter any issues with compatibility with another mod, please [make an issue](https://github.com/Penguin-Spy/skins-factored/issues) or [a discussion post](https://mods.factorio.com/mod/skins-factored/discussion)!  
+This library was written to be compatible with almost all mods that edit the default character prototype. It is explicitly compatible with [Jetpack](https://mods.factorio.com/mod/jetpack), [Space Exploration](https://mods.factorio.com/mod/space-exploration), [RPG System](https://mods.factorio.com/mod/RPGsystem), and [CharacterModHelper](https://mods.factorio.com/mod/CharacterModHelper). If you encounter any issues with compatibility with another mod, please [make an issue](https://github.com/Penguin-Spy/skins-factored/issues) or [a discussion post](https://mods.factorio.com/mod/skins-factored/discussion)!  
 (Note that with the release of Factorio 2.0, mod updates may cause compatibility issues, make a discussion post if you encounter any!)
 
 
@@ -13,7 +14,7 @@ This information is only for developers wanting to use this library! See the [mo
 
 Adding support for this mod is simple, and can be done without losing support for other character-selecting mods.  
 You can add multiple skins in one mod if you wish, just follow the steps for each skin you want to add, making sure to use a unique skin id for each.  
-Before calling the functions in either phase, you should first check that `skins_factored.schema_version == 2` (the current version).
+Before calling the functions in either phase, you may want to first check that `skins_factored.schema_version == 2` (the current version).
 
 ### `settings.lua`
 First, add the following line to your `settings.lua`:
@@ -88,7 +89,7 @@ If your mod adds multiple skins, make sure to group all `[entity-name]`s, etc. u
 Finally, add the following to your mod's `info.json`:
 ```json
   "dependencies": [
-    "skins-factored >= 1.2.1"
+    "skins-factored >= 1.3.0"
   ],
 ```
 If you are creating a new skin mod and are using this library, you **must** use a hard dependency (the JSON above does that); **do not** try to overwrite the default `character` if this mod isn't found!! That will simply create the plentiful bundle of issues that this library was written to avoid.  

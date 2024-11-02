@@ -55,7 +55,14 @@ local function update_active_skin(player, skin)
 
   -- Change setting, but mark that code did it (not the player)
   storage.changed_setting[player.index] = true
-  settings.get_player_settings(player.index)["skins-factored-selected-skin"] = {value = skin}
+
+  -- If the skin isn't one of the ones added by !skins, it's either external or the engineer
+  -- since external skins can't be valid values for the setting, just store them as the engineer :/
+  if Common.added_skins[skin] then
+    settings.get_player_settings(player.index)["skins-factored-selected-skin"] = {value = skin}
+  else
+    settings.get_player_settings(player.index)["skins-factored-selected-skin"] = {value = "engineer"}
+  end
 end
 
 -- Safety checks used in multiple places
@@ -168,8 +175,15 @@ local function on_runtime_mod_setting_changed(event)
     else
       -- Skin swap failed, we need to reset the player's setting to their current skin
       storage.changed_setting[event.player_index] = true
-      -- this must be a call to get_player_settings, storing the result as a variable & writing to it later doesn't work.
-      settings.get_player_settings(event.player_index)["skins-factored-selected-skin"] = {value = storage.active_skin[event.player_index]}
+
+      -- If the skin isn't one of the ones added by !skins, it's either external or the engineer
+      -- since external skins can't be valid values for the setting, just store them as the engineer :/
+      local old_skin = storage.active_skin[event.player_index]
+      if Common.added_skins[old_skin] then
+        settings.get_player_settings(event.player_index)["skins-factored-selected-skin"] = {value = old_skin}
+      else
+        settings.get_player_settings(event.player_index)["skins-factored-selected-skin"] = {value = "engineer"}
+      end
     end
 
   else  -- the event was triggered by the command
