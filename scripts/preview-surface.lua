@@ -38,7 +38,7 @@ function PreviewSurface.initalize()
   data.skin_positions = data.skin_positions or {}
   data.next_skin_pos = data.next_skin_pos or 1
 
-  for _, skin in pairs(Common.available_skins) do
+  for skin in pairs(Common.available_skins) do
     if not data.skin_positions[skin] then
       local n = data.next_skin_pos
       data.skin_positions[skin] = n

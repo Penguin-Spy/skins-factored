@@ -73,13 +73,13 @@ function try_swap(player, skin, ignore_already)
   -- Check if the player is already using the requested skin
   if (not ignore_already) and (skin == storage.active_skin[player.index]) then
     player.print{"command-output.character-already-skin", {"entity-name."..Common.skin_to_prototype(skin)}}
-    return
+    return false
   end
 
   -- Check if the player is currently using a registered skin's character.
   -- Prevents swapping while at jetpack height or otherwise controlling a character from a different mod.
   local current_prototype_name = Common.prototype_to_skin(character.name)
-  if not Common.is_skin_available(current_prototype_name) then
+  if not Common.available_skins[current_prototype_name] then
     if string.sub(character.name, -8) == "-jetpack" then
       player.print{"command-output.character-using-jetpack"}
     else
@@ -117,7 +117,7 @@ commands.add_command("character", {"command-help.character"}, function (command)
   if command.parameter then
     local skin = command.parameter
     -- Check if the skin that the player requested exists
-    if not Common.is_skin_available(command.parameter) then
+    if not Common.available_skins[command.parameter] then
       player.print{"command-output.character-invalid-skin", command.parameter}
       return
     end
@@ -131,7 +131,7 @@ commands.add_command("character", {"command-help.character"}, function (command)
 
   -- No parameter passed, list all skins
   else
-    player.print{"command-output.character-available-skins", table.concat(Common.available_skins, "\n  ")}
+    player.print{"command-output.character-available-skins", Common.get_available_skins_message()}
   end
 end)
 

@@ -7,7 +7,8 @@
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
 ]]
-local Common = require "common"
+local available_skins = util.list_to_map(util.split(settings.startup["skins-factored-all-skins"].value, ";"))
+available_skins["engineer"] = nil  -- skin mods can't use the name "engineer"
 
 --- Data for a character skin
 ---@class skins_factored_skin_data
@@ -65,7 +66,7 @@ skins_factored_INTERNAL = {
 ---@param skin_id string                  The internal identifier for the skin, as previously registered with `skins_factored.register_skin_id()`
 ---@param data skins_factored_skin_data   Data for the character skin
 function skins_factored.create_skin(skin_id, data)
-  if not Common.is_skin_available(skin_id) then
+  if not available_skins[skin_id] then
     error("Unknown skin id: '" .. skin_id .. "', did you forget to register it in settings.lua?")
   end
 

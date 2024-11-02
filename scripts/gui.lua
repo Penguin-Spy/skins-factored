@@ -83,7 +83,7 @@ return function(PreviewSurface)
       local skins_table = parent.add{ type = "table", column_count = 5, style = "skins_factored_skins_table", name = "skins_table" }
       storage.open_skins_table[player.index] = skins_table
 
-      for _, skin in pairs(Common.available_skins) do
+      for skin in pairs(Common.available_skins) do
         local skin_preview_entity = PreviewSurface.get_skin_preview(skin, player)
 
         local skin_button = skins_table.add{ type = "button", style = "skins_factored_skin_button", caption = { "entity-description." .. skin_preview_entity.name },
@@ -172,8 +172,9 @@ return function(PreviewSurface)
       if element.tags.action == "toggle_window" then
         GUI.toggle_window(player)
       elseif element.tags.action == "try_swap" then
-        try_swap(player, element.tags.skin)
-        if element and element.valid then  -- only refresh the window if it's still valid (and thus is the standalone skin selector)
+        local success = try_swap(player, element.tags.skin)
+        -- only refresh the window if it's necessary and still valid (and thus is the standalone skin selector)
+        if success and element and element.valid and element.parent and element.parent.valid then
           GUI.set_window_visible(player, true)
           GUI.update_skins_table(element.parent, player)  -- the skins_table is the parent of the skin_button that was clicked
         end
