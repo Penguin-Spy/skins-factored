@@ -36,7 +36,7 @@ return function(GUI)
         picker_frame.style.horizontally_stretchable = false
 
         GUI.attach_skins_table(picker_frame, player)
-        GUI.update_skins_table(picker_frame, player)
+        GUI.update_skins_table(picker_frame.skins_table, player)
       else
         element.add{type="label", name="instructions", caption=Common.compatibility_message}
       end

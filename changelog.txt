@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.2
+Date: 1.11.2024
+  Features:
+    - Redesign skin selector GUI to match the rest of Factorio's GUIs.
+  Bugfixes:
+    - Correctly handle armor animations's armor field again (fixes a potential crash introduced in 1.2.1).
+    - Keep the current GUI open when switching characters.
+
+---------------------------------------------------------------------------------------------------
 Version: 1.2.1
 Date: 25.10.2024
   Features:

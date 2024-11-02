@@ -47,7 +47,7 @@ for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
   --[[ Set animations ]]
   local missing_armors = get_missing_armors(skin.armor_animations)
 
-  if #missing_armors > 0 then
+  if #missing_armors > 0 and #skin.armor_animations > 1 then
     log(skin_id .. " is missing armors: " .. table.concat(missing_armors, ", "))
 
     -- Attempt to merge the original character's animations's armors into this character's animations
@@ -71,10 +71,9 @@ for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
     if #missing_armors > 0 then
       log(skin_id .. " is STILL missing armors :bruh: " .. table.concat(missing_armors, ", "))
       -- last resort, just slap it on the end
-      local highest_tier = skin.armor_animations[#skin.armor_animations]
-      if not highest_tier.armors then highest_tier.armors = {} end
+      local highest_tier_armors = skin.armor_animations[#skin.armor_animations].armors  ---@cast highest_tier_armors -nil
       for _, armor in ipairs(missing_armors) do
-        table.insert(highest_tier.armors, armor)
+        table.insert(highest_tier_armors, armor)
       end
     end
   end

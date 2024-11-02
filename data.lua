@@ -115,9 +115,8 @@ styles["skins_factored_selector_window"] = {
   parent = "frame",
   minimal_height = 328,
   maximal_height = 676,
-  width = 868
+  width = 876
 }
-
 styles["skins_factored_titlebar_drag"] = {
   type = "empty_widget_style",
   parent = "draggable_space",
@@ -126,12 +125,27 @@ styles["skins_factored_titlebar_drag"] = {
   height = 24,
   horizontally_stretchable = "on",
 }
+
+styles["skins_factored_subheader_frame"] = {
+  type = "frame_style",
+  parent = "subheader_frame",
+  horizontally_stretchable = "on",
+  height = 56
+}
 styles["skins_factored_skin_selector_label"] = {
   type = "label_style",
   parent = "label",
-  single_line = false
+  single_line = false,
+  left_padding = 8,
+  top_margin = 2,
+  bottom_margin = -2
 }
 
+styles["skins_factored_scroll_pane"] = {
+  type = "scroll_pane_style",
+  parent = "entity_frame_scroll_pane",
+  horizontally_stretchable = "on"
+}
 styles["skins_factored_skins_table"] = {
   type = "table_style",
   parent = "table",
