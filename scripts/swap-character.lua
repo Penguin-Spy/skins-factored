@@ -196,11 +196,12 @@ local function swap_character(old_character, new_prototype_name, player)
     end
   end
 
-  -- Attach the player to the new character
-  -- Done at the end to avoid any jank caused by having different character properties for part of the script
-  -- if the player is in remote view on a different surface, we must first move them back to their character's surface
-  player.set_controller{ type = defines.controllers.remote, surface = new_character.surface }
-  player.set_controller{ type = defines.controllers.character, character = new_character }
+  -- Attach the player to the new character, but only if they were actively controlling the character (to not interrupt cutscenes)
+  if old_character.player then
+    -- if the player is in remote view on a different surface, we must first move them back to their character's surface
+    player.set_controller{ type = defines.controllers.remote, surface = new_character.surface }
+    player.set_controller{ type = defines.controllers.character, character = new_character }
+  end
 
   if hand_location then player.hand_location = hand_location end
   if cursor_ghost then new_character.cursor_ghost = cursor_ghost end
