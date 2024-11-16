@@ -42,5 +42,13 @@ data:extend{
     order = "b",
     setting_type = "runtime-per-user",
     default_value = true
+  },
+  {  -- Should the skin selector button be added to the mod-gui flow in the top left
+    type = "bool-setting",
+    name = "skins-factored-mod-gui-button",
+    order = "c",
+    setting_type = "runtime-per-user",
+    default_value = true,
+    hidden = mods["informatron"] and true or false    -- hide the setting if InformaTron is active, as the setting is ignored
   }
 }

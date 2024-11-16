@@ -71,6 +71,23 @@ local function swap_character(old_character, new_prototype_name, player)
   new_character.allow_dispatching_robots = old_character.allow_dispatching_robots
   new_character.selected_gun_index = old_character.selected_gun_index
 
+  -- Character entity bonuses
+  --- force bonuses don't need copying, character_inventory_slots_bonus is copied when copying the inventory contents
+  new_character.character_crafting_speed_modifier = old_character.character_crafting_speed_modifier
+  new_character.character_mining_speed_modifier = old_character.character_mining_speed_modifier
+  new_character.character_additional_mining_categories = old_character.character_additional_mining_categories
+  new_character.character_running_speed_modifier = old_character.character_running_speed_modifier
+  new_character.character_build_distance_bonus = old_character.character_build_distance_bonus
+  new_character.character_item_drop_distance_bonus = old_character.character_item_drop_distance_bonus
+  new_character.character_reach_distance_bonus = old_character.character_reach_distance_bonus
+  new_character.character_resource_reach_distance_bonus = old_character.character_resource_reach_distance_bonus
+  new_character.character_item_pickup_distance_bonus = old_character.character_item_pickup_distance_bonus
+  new_character.character_loot_pickup_distance_bonus = old_character.character_loot_pickup_distance_bonus
+  -- character_inventory_slots_bonus
+  new_character.character_trash_slot_count_bonus = old_character.character_trash_slot_count_bonus
+  new_character.character_maximum_following_robot_count_bonus = old_character.character_maximum_following_robot_count_bonus
+  new_character.character_health_bonus = old_character.character_health_bonus
+
   -- [[ Robot things ]]
   -- Combat robots
   for _, robot in pairs(old_character.following_robots) do
@@ -113,12 +130,10 @@ local function swap_character(old_character, new_prototype_name, player)
   end
 
   -- [[ Inventory ]]
-  local open_gui = old_character.opened
+  local open_gui = old_character.opened or player.opened_self and new_character
+  local hand_location = player.hand_location
+  local cursor_ghost = old_character.cursor_ghost
   old_character.cursor_stack.swap_stack(new_character.cursor_stack)
-
-  if old_character.cursor_ghost then
-    new_character.cursor_ghost = old_character.cursor_ghost
-  end
 
   -- Crafting queue
 
@@ -171,31 +186,26 @@ local function swap_character(old_character, new_prototype_name, player)
   end
   new_character.character_inventory_slots_bonus = new_character.character_inventory_slots_bonus - 999
 
-  -- Put new player into vehicle
-  if player.vehicle then
-    if player.vehicle.get_driver() == old_character then
-      player.vehicle.set_driver(new_character)
-    elseif player.vehicle.get_passenger and player.vehicle.get_passenger() == old_character then
-      player.vehicle.set_passenger(new_character)
+  -- Put new character into vehicle
+  if old_character.vehicle then
+    local vehicle = old_character.vehicle
+    if vehicle.get_driver() == old_character then
+      vehicle.set_driver(new_character)
+    elseif vehicle.get_passenger and vehicle.get_passenger() == old_character then
+      vehicle.set_passenger(new_character)
     end
   end
 
   -- Attach the player to the new character
   -- Done at the end to avoid any jank caused by having different character properties for part of the script
-  if old_character.player then
-    -- these get reset when we set_controller
-    local hand_location = player.hand_location
-    local opened_self = player.opened_self
+  -- if the player is in remote view on a different surface, we must first move them back to their character's surface
+  player.set_controller{ type = defines.controllers.remote, surface = new_character.surface }
+  player.set_controller{ type = defines.controllers.character, character = new_character }
 
-    -- if the player is in remote view on a different surface, we must first move them back to their character's surface
-    player.set_controller{ type = defines.controllers.remote, surface = new_character.surface }
-    player.set_controller{ type = defines.controllers.character, character = new_character }
+  if hand_location then player.hand_location = hand_location end
+  if cursor_ghost then new_character.cursor_ghost = cursor_ghost end
 
-    if opened_self then player.opened = new_character end
-    if hand_location then player.hand_location = hand_location end
-  end
-
-  -- assigning the gui triggers the closing event, causing the skin selector to become visible=false if it's whats open
+  -- assigning the gui triggers the closing event, so some modded GUIs will still become closed
   if open_gui and open_gui.valid then
     new_character.opened = open_gui
   end

@@ -121,6 +121,8 @@ return function(PreviewSurface)
         skin_button.entity_frame.entity_camera.entity = PreviewSurface.get_skin_preview(skin_button.tags.skin, player)
       end
     end
+
+    PreviewSurface.chart()
   end
 
   -- Show/Hide the independent skin selector window
@@ -162,6 +164,13 @@ return function(PreviewSurface)
     local buttons = mod_gui.get_button_flow(player)
     if buttons[selector_open_name] then
       buttons[selector_open_name].destroy()
+    end
+    -- removes the frame if it's empty (so there's not a weird empty rectangle left behind)
+    local top = player.gui.top
+    if top.mod_gui_top_frame and top.mod_gui_top_frame.mod_gui_inner_frame
+      and #top.mod_gui_top_frame.mod_gui_inner_frame.children == 0
+    then
+      top.mod_gui_top_frame.destroy()
     end
   end
 

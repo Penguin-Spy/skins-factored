@@ -113,4 +113,14 @@ function PreviewSurface.ensure_hidden()
   end
 end
 
+-- reveals the area of the map that the characters are in
+function PreviewSurface.chart()
+  local surface = game.get_surface("skins_factored_preview_surface")
+  if surface then
+    for _, force in pairs(game.forces) do
+      force.chart(surface, {{0,0}, {0,0}})
+    end
+  end
+end
+
 return PreviewSurface

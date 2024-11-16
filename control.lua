@@ -161,6 +161,16 @@ end
 
 -- If the player changed their setting & the command didn't, try to swap the player's character
 local function on_runtime_mod_setting_changed(event)
+  if event.setting == "skins-factored-mod-gui-button" then
+    if settings.get_player_settings(event.player_index)["skins-factored-mod-gui-button"].value then
+      GUI.create_button(game.get_player(event.player_index))
+    else
+      GUI.remove_button(game.get_player(event.player_index))
+    end
+  elseif not (event.setting == "skins-factored-selected-skin") then
+    return
+  end
+
   if not (event.setting == "skins-factored-selected-skin") then return end
 
   local player = game.get_player(event.player_index)  ---@cast player -nil
@@ -297,8 +307,9 @@ local function initalize_player(player)
   PreviewSurface.initalize_player(player)
   GUI.initalize_player(player)
 
+  local show_mod_gui_button = settings.get_player_settings(player.index)["skins-factored-mod-gui-button"].value
   -- if Informatron isn't present, add our own button for the GUI
-  if not script.active_mods["informatron"] and not Common.compatibility_mode then
+  if not script.active_mods["informatron"] and not Common.compatibility_mode and show_mod_gui_button then
     GUI.create_button(player)
   else  -- if it is, remove our button (if it exists)
     GUI.remove_button(player)
@@ -319,7 +330,8 @@ local function initalize_player(player)
 end
 
 -- Runs once on new save, as well as when configuration changes. ensures All The Things are set up, including all players
-local function initalize()
+-- intentionally not local to allow calling from /c
+function initalize()
   log("Initalizing global data")
   -- All are tables indexed by player_index
   storage.active_skin = storage.active_skin or {}               -- permanent list of what this player's current skin is. may be not present for a player if they haven't changed skins yet
