@@ -30,22 +30,6 @@ remote.add_interface("skins-factored", remote_interface)
 
 if script.active_mods["gvv"] then require("__gvv__.gvv")() end
 
--- Pass events to GUI
-script.on_event(defines.events.on_gui_click, GUI.on_clicked)
-script.on_event(defines.events.on_gui_closed, GUI.on_closed)
--- keybind
-script.on_event("skins_factored_toggle_interface", function(event)
-    local player = game.get_player(event.player_index)
-    GUI.toggle_window(player)
-end)
--- shortcut bar button
-script.on_event(defines.events.on_lua_shortcut, function(event)
-  if event.prototype_name == "skins_factored_toggle_interface" then
-    local player = game.get_player(event.player_index)
-    GUI.toggle_window(player)
-  end
-end)
-
 
 -- [[ Local functions ]]
 
@@ -264,42 +248,6 @@ end
 
 -- [[ Initalization ]]
 
--- used to invoke remote calls to other mods once the game and all mods have fully initalized and loaded
---  does not run on every load, only loads that run initalize()!
-local function runtime_initalize()
-  -- unregister this event
-  script.on_nth_tick(1, nil)
-  log("Runtime initalizing")
-
-  if Common.compatibility_mode then
-    -- list of all character prototypes we've added
-    local available_prototypes = {}
-    for _, skin_id in ipairs(Common.added_skins) do
-      table.insert(available_prototypes, Common.skin_to_prototype(skin_id))
-    end
-
-    -- miniMAXIme compat
-    if script.active_mods["minime"] then
-      log("minime compat: " .. serpent.line(available_prototypes))
-      remote.call("minime", "register_characters", available_prototypes)
-      log("called")
-
-    -- RitnCharacters compat
-    elseif script.active_mods["RitnCharacters"] then
-      for _, prototype in ipairs(available_prototypes) do
-        local name = {"entity-name." .. prototype}
-        log("adding skin " .. prototype .. " to RitnCharacters: " .. serpent.line(name))
-        remote.call("RitnCharacters", "remove_character", prototype) -- remove the auto-generated entry (it has an untranslated name)
-        remote.call("RitnCharacters", "add_character", name, prototype)
-      end
-
-    -- disabled because scenario doesn't support characters
-    else
-      log("Skin switching disabled, no compat loaded.")
-    end
-  end
-end
-
 -- Ensures players have GUI & PreviewSurface properly set up
 local function initalize_player(player)
   log("Initalizing player "..player.name.."["..player.index.."]")
@@ -348,8 +296,33 @@ function initalize()
     initalize_player(player)
   end
 
-  -- Initalize function that runs during runtime, once everything is done loading (on_init_final_fixes if you will)
-  script.on_nth_tick(1, runtime_initalize)
+  if Common.compatibility_mode then
+    -- list of all character prototypes we've added
+    local available_prototypes = {}
+    for skin_id in pairs(Common.added_skins) do
+      table.insert(available_prototypes, Common.skin_to_prototype(skin_id))
+    end
+
+    -- miniMAXIme compat
+    if script.active_mods["minime"] then
+      log("minime compat: " .. serpent.line(available_prototypes))
+      remote.call("minime", "register_characters", available_prototypes)
+      log("called")
+
+    -- RitnCharacters compat
+    elseif script.active_mods["RitnCharacters"] then
+      for _, prototype in ipairs(available_prototypes) do
+        local name = {"entity-name." .. prototype}
+        log("adding skin " .. prototype .. " to RitnCharacters: " .. serpent.line(name))
+        remote.call("RitnCharacters", "remove_character", prototype) -- remove the auto-generated entry (it has an untranslated name)
+        remote.call("RitnCharacters", "add_character", name, prototype)
+      end
+
+    -- disabled because scenario doesn't support characters
+    else
+      log("Skin switching disabled, no compat loaded.")
+    end
+  end
 end
 
 -- Runs every time the save is loaded (including the first time). Can't edit the game state
@@ -363,10 +336,28 @@ local function loadalize()
       script.on_event(defines.events.on_player_respawned, swap_on_player_respawned)
     end
 
+    -- general functionality
     script.on_event(defines.events.on_tick, on_tick)
     script.on_event(defines.events.on_runtime_mod_setting_changed, on_runtime_mod_setting_changed)
     script.on_event(defines.events.on_cutscene_cancelled, on_cutscene_cancelled)
     script.on_event(defines.events.on_force_created, on_force_created)
+
+    -- Pass events to GUI
+    script.on_event(defines.events.on_gui_click, GUI.on_clicked)
+    script.on_event(defines.events.on_gui_closed, GUI.on_closed)
+    -- keybind
+    script.on_event("skins_factored_toggle_interface", function(event)
+      local player = game.get_player(event.player_index)
+      GUI.toggle_window(player)
+    end)
+    -- shortcut bar button
+    script.on_event(defines.events.on_lua_shortcut, function(event)
+      if event.prototype_name == "skins_factored_toggle_interface" then
+        local player = game.get_player(event.player_index)
+        GUI.toggle_window(player)
+      end
+    end)
+
     log("Added all event listeners")
   else
     log("Loading in compatibility mode; event listeners disabled")

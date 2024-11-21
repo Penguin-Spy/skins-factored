@@ -18,6 +18,9 @@ log("Registered skins: " .. table.concat(skin_ids, ", "))
 
 local skin_ids_string = table.concat(skin_ids, ";")
 
+-- hide user settings if running in compatibility mode
+local hide_settings = (mods["minime"] or mods["RitnCharacters"]) and true or false
+
 -- Register all skin_ids as options for the dropdown
 data:extend{
   {  -- Actual setting for users to pick a skin
@@ -26,7 +29,8 @@ data:extend{
     order = "a",
     setting_type = "runtime-per-user",
     default_value = (#skin_ids == 2 and skin_ids[2]) or "engineer",  -- Default to the only custom skin if there's just 1, or to the engineer if there's multiple
-    allowed_values = skin_ids
+    allowed_values = skin_ids,
+    hidden = hide_settings
   },
   {  -- Fake setting to smuggle the list of skins into the control stage
     type = "string-setting",
@@ -41,7 +45,8 @@ data:extend{
     name = "skins-factored-render-character",
     order = "b",
     setting_type = "runtime-per-user",
-    default_value = true
+    default_value = true,
+    hidden = hide_settings
   },
   {  -- Should the skin selector button be added to the mod-gui flow in the top left
     type = "bool-setting",
@@ -49,6 +54,6 @@ data:extend{
     order = "c",
     setting_type = "runtime-per-user",
     default_value = true,
-    hidden = mods["informatron"] and true or false    -- hide the setting if InformaTron is active, as the setting is ignored
+    hidden = mods["informatron"] and true or hide_settings  -- hide the setting if InformaTron is active, as the setting is ignored
   }
 }

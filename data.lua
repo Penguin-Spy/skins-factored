@@ -94,26 +94,28 @@ if mods["CharacterModHelper"] then
   CharModHelper.enable_multi_character("skins-factored")
 end
 
--- Prototypes
-data:extend{
-  {
-    type = "custom-input",
-    name = "skins_factored_toggle_interface",
-    key_sequence = "ALT + S",
-    order = "a",
-    consuming = "game-only"
-  }  --[[@as data.CustomInputPrototype]],
-  {
-    type = "shortcut",
-    name = "skins_factored_toggle_interface",
-    associated_control_input = "skins_factored_toggle_interface",
-    action = "lua",
-    icon = "__core__/graphics/icons/entity/character.png",
-    icon_size = 64,
-    small_icon = "__core__/graphics/icons/entity/character.png",
-    small_icon_size = 64
-  }  --[[@as data.ShortcutPrototype]]
-}
+-- shortcut prototypes
+if not (mods["minime"] or mods["RitnCharacters"]) then
+  data:extend{
+    {
+      type = "custom-input",
+      name = "skins_factored_toggle_interface",
+      key_sequence = "ALT + S",
+      order = "a",
+      consuming = "game-only"
+    }  --[[@as data.CustomInputPrototype]],
+    {
+      type = "shortcut",
+      name = "skins_factored_toggle_interface",
+      associated_control_input = "skins_factored_toggle_interface",
+      action = "lua",
+      icon = "__core__/graphics/icons/entity/character.png",
+      icon_size = 64,
+      small_icon = "__core__/graphics/icons/entity/character.png",
+      small_icon_size = 64
+    }  --[[@as data.ShortcutPrototype]]
+  }
+end
 
 local styles = data.raw["gui-style"].default
 

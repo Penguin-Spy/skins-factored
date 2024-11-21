@@ -32,7 +32,7 @@ local function create_window(player)
   titlebar.add{ type = "label", style = "frame_title", caption = { "skins-factored.title_skins-factored" }, ignored_by_interaction = true }
   titlebar.add{ type = "empty-widget", style = "skins_factored_titlebar_drag", ignored_by_interaction = true }
   titlebar.add{ type = "sprite-button", style = "frame_action_button", tooltip = { "gui.close-instruction" },
-    sprite = "utility/close", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black",
+    sprite = "utility/close", hover_sprite = "utility/close_black", click_sprite = "utility/close_black",
     tags = tags{ action = "toggle_window" }
   }
 
@@ -41,16 +41,11 @@ local function create_window(player)
   local header = body.add{ type = "frame", style = "skins_factored_subheader_frame", direction = "vertical" }
 
   header.add{ type = "label", style = "skins_factored_skin_selector_label", caption = { "skins-factored.about" } }
+  header.add{ type = "label", style = "skins_factored_skin_selector_label", caption = { "skins-factored.skin-selector-instructions" } }
 
-  if not Common.compatibility_mode then  -- instructions & frame for skins table
-    header.add{ type = "label", style = "skins_factored_skin_selector_label", caption = { "skins-factored.skin-selector-instructions" } }
-
-    -- need "scroll-pane" to put picker frame in
-    local picker_pane = body.add{ type = "scroll-pane", name = "picker_pane", style = "skins_factored_scroll_pane", vertical_scroll_policy = "always" }
-    picker_pane.add{ type = "frame", style = "deep_frame_in_shallow_frame_for_description", direction = "vertical", name = "picker_frame" }
-  else  -- just compat instructions
-    body.add{ type = "label", style = "skins_factored_skin_selector_label", caption = Common.compatibility_message }
-  end
+  -- need "scroll-pane" to put picker frame in
+  local picker_pane = body.add{ type = "scroll-pane", name = "picker_pane", style = "skins_factored_scroll_pane", vertical_scroll_policy = "always" }
+  picker_pane.add{ type = "frame", style = "deep_frame_in_shallow_frame_for_description", direction = "vertical", name = "picker_frame" }
 
   main.visible = false
   return main
@@ -70,9 +65,9 @@ return function(PreviewSurface)
       selector_window.destroy()
     end
 
-    -- then create the window
-    selector_window = create_window(player)
+    -- then create the window (if not in compatibility mode)
     if not Common.compatibility_mode then
+      selector_window = create_window(player)
       GUI.attach_skins_table(selector_window.body.picker_pane.picker_frame, player)
     end
   end
