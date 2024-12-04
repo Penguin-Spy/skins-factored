@@ -31,7 +31,9 @@ skins_factored = {
 ---@diagnostic disable-next-line: lowercase-global
 skins_factored_INTERNAL = {
   ---@type table<string, skins_factored_skin_data>
-  registered_skins = {}
+  registered_skins = {},
+  ---@type table<string, data.CharacterPrototype>
+  created_characters = {}
 }
 
 -- Creates a character skin.

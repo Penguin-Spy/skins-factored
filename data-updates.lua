@@ -143,4 +143,6 @@ for skin_id, skin in pairs(skins_factored_INTERNAL.registered_skins) do
 
   -- Add the character's prototype
   data:extend{ character }
+  -- Store the character in a table for later compatibility changes
+  skins_factored_INTERNAL.created_characters[skin_id] = character
 end
